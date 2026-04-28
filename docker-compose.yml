@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: carlist-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: carlist
+      POSTGRES_PASSWORD: carlist
+      POSTGRES_DB: carlist
+    ports:
+      - "5432:5432"
+    volumes:
+      - carlist_pgdata:/var/lib/postgresql/data
+
+volumes:
+  carlist_pgdata:
