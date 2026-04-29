@@ -67,10 +67,12 @@ model User {
   companyLogoUrl  String?
   taxId           String?
   dealerLicenseNo String?
-  address         String?
-  isVerified      Boolean    @default(false)
-  isActive        Boolean    @default(true)
-  listings        Listing[]
+  address           String?
+  dealerRating      Float?
+  dealerReviewCount Int        @default(0)
+  isVerified        Boolean    @default(false)
+  isActive          Boolean    @default(true)
+  listings          Listing[]
   sessions        UserSession[]
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt

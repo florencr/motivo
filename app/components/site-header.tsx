@@ -28,7 +28,7 @@ export default function SiteHeader() {
           <a href="/cars" className="transition hover:text-slate-900">
             Cars
           </a>
-          <a href="#" className="transition hover:text-slate-900">
+          <a href="/dealers" className="transition hover:text-slate-900">
             Dealers
           </a>
         </nav>

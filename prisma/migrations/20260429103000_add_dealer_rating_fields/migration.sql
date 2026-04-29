@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "dealerRating" DOUBLE PRECISION,
+ADD COLUMN "dealerReviewCount" INTEGER NOT NULL DEFAULT 0;

@@ -128,20 +128,23 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
   const fuelOptions = ["Petrol", "Diesel", "Electric", "Hybrid"];
   const tagOptions = ["No Accident", "1 Owner", "Warranty", "Inspected"];
   const { makes, models } = await getCatalogData();
-  const listings = await prisma.listing.findMany({
-    where: { isPublished: true },
-    orderBy: { createdAt: "desc" },
-    include: {
-      seller: {
-        select: {
-          name: true,
-          companyName: true,
+
+  let listingsLoadError: string | null = null;
+  let mockCars: CarListItem[];
+  try {
+    const listings = await prisma.listing.findMany({
+      where: { isPublished: true },
+      orderBy: { createdAt: "desc" },
+      include: {
+        seller: {
+          select: {
+            name: true,
+            companyName: true,
+          },
         },
       },
-    },
-  });
-
-  const mockCars: CarListItem[] = listings.map((item) => {
+    });
+    mockCars = listings.map((item) => {
     const photos = getImageUrlsFromFeatures(item.features);
     const fuelMap: Record<string, string> = {
       PETROL: "Petrol",
@@ -175,7 +178,13 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
       vendorTags: [],
       photos: photos.length > 0 ? photos : ["https://placehold.co/1200x800?text=No+Photo"],
     };
-  });
+    });
+  } catch (err) {
+    listingsLoadError =
+      err instanceof Error ? err.message : "Could not load listings from the database.";
+    console.error("[cars] listing.findMany failed:", err);
+    mockCars = [];
+  }
 
   const filteredCars = mockCars.filter((car) => {
     const byMake = make ? car.make.toLowerCase().includes(make) : true;
@@ -450,6 +459,11 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
             <p className="mt-2 text-sm text-slate-600">
               {filteredCars.length} result(s) found
             </p>
+            {listingsLoadError ? (
+              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Listings could not be loaded: {listingsLoadError}
+              </p>
+            ) : null}
 
             <div className="mt-6 grid gap-4">
               {filteredCars.length === 0 ? (
