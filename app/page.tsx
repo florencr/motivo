@@ -1,5 +1,10 @@
 import PopularMakes from "./components/popular-makes";
-import { getCatalogData, getVehicleSegmentsForTypeSlug, getVehicleTypes } from "@/lib/catalog";
+import {
+  getCatalogData,
+  getPopularMakesFromListings,
+  getVehicleSegmentsForTypeSlug,
+  getVehicleTypes,
+} from "@/lib/catalog";
 
 type HomePageProps = {
   searchParams: Promise<{
@@ -16,6 +21,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const { makes: makesForTab, models: modelsForTab } = await getCatalogData({
     vehicleTypeSlug: selectedVehicleType,
   });
+  const popularMakes = await getPopularMakesFromListings(8);
 
   function CategoryIcon({ type }: { type: string }) {
     if (type === "electric") {
@@ -168,7 +174,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           </div>
         </div>
       </section>
-      <PopularMakes />
+      <PopularMakes makes={popularMakes} />
     </div>
   );
 }

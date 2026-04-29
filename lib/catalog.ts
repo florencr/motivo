@@ -14,6 +14,53 @@ export async function getVehicleTypes() {
   }
 }
 
+export type PopularMakeFromListings = {
+  id: string;
+  name: string;
+  vehicleTypeSlug: string;
+  publishedListingCount: number;
+};
+
+/** Makes with the most published listings (for homepage “Popular makes”). */
+export async function getPopularMakesFromListings(limit = 8): Promise<PopularMakeFromListings[]> {
+  try {
+    const grouped = await prisma.listing.groupBy({
+      by: ["makeId"],
+      where: { isPublished: true },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: limit,
+    });
+    if (grouped.length === 0) return [];
+
+    const makeIds = grouped.map((g) => g.makeId);
+    const makes = await prisma.make.findMany({
+      where: { id: { in: makeIds } },
+      select: {
+        id: true,
+        name: true,
+        vehicleType: { select: { slug: true } },
+      },
+    });
+    const makeById = new Map(makes.map((m) => [m.id, m]));
+
+    return grouped
+      .map((g) => {
+        const m = makeById.get(g.makeId);
+        if (!m) return null;
+        return {
+          id: m.id,
+          name: m.name,
+          vehicleTypeSlug: m.vehicleType.slug,
+          publishedListingCount: g._count.id,
+        };
+      })
+      .filter((row): row is PopularMakeFromListings => row != null);
+  } catch {
+    return [];
+  }
+}
+
 export async function getVehicleSegmentsForTypeSlug(slug: string) {
   const s = slug.trim();
   if (!s) return [];

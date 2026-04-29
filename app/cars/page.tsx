@@ -283,13 +283,38 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
       <div className="mx-auto max-w-7xl">
         <div className="lg:grid lg:grid-cols-4 lg:gap-6">
           <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-900">Filters</h2>
-              <a href="/cars" className="text-xs text-slate-600">
+            <input id="mobile-filters-toggle" type="checkbox" className="peer sr-only lg:hidden" />
+            <div className="flex items-center justify-between gap-2">
+              <label
+                htmlFor="mobile-filters-toggle"
+                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg py-1 -my-1 lg:cursor-default lg:pointer-events-none"
+                title="Show or hide filters"
+              >
+                <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold text-slate-900">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5 shrink-0 text-slate-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 6h16M4 12h10M4 18h14" />
+                    <circle cx="14" cy="6" r="2" fill="currentColor" stroke="none" />
+                    <circle cx="10" cy="12" r="2" fill="currentColor" stroke="none" />
+                    <circle cx="16" cy="18" r="2" fill="currentColor" stroke="none" />
+                  </svg>
+                  Filters
+                </h2>
+              </label>
+              <a href="/cars" className="shrink-0 text-xs text-slate-600">
                 Clear Filters
               </a>
             </div>
-            <form action="/cars" method="GET" className="mt-4 space-y-3">
+            <div className="mt-4 hidden peer-checked:block lg:block">
+              <form action="/cars" method="GET" className="space-y-3">
               <input type="hidden" name="vehicleType" value={params.vehicleType ?? vehicleTypeSlug} />
               {(params.segment ?? params.type) && (
                 <input type="hidden" name="segment" value={params.segment ?? params.type ?? ""} />
@@ -390,8 +415,8 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
               >
                 Apply Filters
               </button>
-            </form>
-            <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
+              </form>
+              <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
               <div>
                 <p className="text-xs font-medium text-slate-600">Location</p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -463,6 +488,7 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
                     );
                   })}
                 </div>
+              </div>
               </div>
             </div>
           </aside>
