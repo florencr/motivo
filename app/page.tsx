@@ -55,7 +55,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         <div className="relative mx-auto w-full max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="mt-8 text-center">
             <h1 className="text-4xl font-bold text-white sm:text-5xl">
-              Sell Faster, Buy Smarter
+              Sell Faster. Buy Smarter.
             </h1>
             <p className="mt-4 text-base text-slate-200 sm:text-lg">
               Search to buy, list to sell across Albania — make, model, registration, mileage, and price.
