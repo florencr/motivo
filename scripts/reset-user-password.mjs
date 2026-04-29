@@ -35,17 +35,31 @@ function parseEnvFile(contents) {
 
 function loadDatabaseUrl() {
   if (process.env.DATABASE_URL?.trim()) {
-    return process.env.DATABASE_URL.trim();
+    return { url: process.env.DATABASE_URL.trim(), source: "environment variable DATABASE_URL" };
   }
   const root = resolve(process.cwd());
   const merged = {};
+  const loadedFrom = [];
   for (const name of [".env", ".env.production"]) {
     const p = resolve(root, name);
     if (!existsSync(p)) continue;
+    loadedFrom.push(name);
     Object.assign(merged, parseEnvFile(readFileSync(p, "utf8")));
   }
   const url = merged.DATABASE_URL?.trim();
-  return url || "";
+  return url ? { url, source: loadedFrom.join(" + ") || "env files" } : { url: "", source: "" };
+}
+
+function describeDatabaseHost(connectionString) {
+  try {
+    const u = new URL(connectionString);
+    const host = u.hostname || "?";
+    const port = u.port || "5432";
+    const db = (u.pathname || "").replace(/^\//, "") || "?";
+    return `${host}:${port} / db=${db}`;
+  } catch {
+    return "(could not parse host from DATABASE_URL)";
+  }
 }
 
 function hashPassword(password) {
@@ -66,7 +80,7 @@ async function main() {
     process.exit(1);
   }
 
-  const connectionString = loadDatabaseUrl();
+  const { url: connectionString, source } = loadDatabaseUrl();
   if (!connectionString) {
     console.error(
       "DATABASE_URL is missing. Set it in the environment, or add it to .env.production (recommended for Neon).",
@@ -74,9 +88,16 @@ async function main() {
     process.exit(1);
   }
 
+  console.log(`Using DATABASE_URL from: ${source}`);
+  console.log(`Connecting to: ${describeDatabaseHost(connectionString)}`);
+
   const passwordHash = hashPassword(password);
   const client = new Client({ connectionString });
   await client.connect();
+  const countRes = await client.query('SELECT count(*)::int AS c FROM "User"');
+  const userCount = countRes.rows[0]?.c ?? 0;
+  console.log(`Users in this database: ${userCount}`);
+
   const res = await client.query(
     'UPDATE "User" SET "passwordHash" = $1, "role" = \'ADMIN\' WHERE lower("email") = lower($2)',
     [passwordHash, email],
@@ -85,6 +106,21 @@ async function main() {
   console.log(`updated_rows ${res.rowCount}`);
   if (res.rowCount === 0) {
     console.error("No user matched that email on this database.");
+    if (userCount === 0) {
+      console.error(
+        "Hint: this database has no users yet. Register once on the site that uses THIS same database, then run this script again.",
+      );
+    } else {
+      console.error(
+        "Hint: the email is not in this database. Use the Neon URL from Vercel (Production) in .env.production, or register with this email on production first.",
+      );
+    }
+    const host = describeDatabaseHost(connectionString);
+    if (host.includes("localhost") || host.includes("127.0.0.1")) {
+      console.error(
+        'Hint: you are on LOCAL Postgres. For production, create carlist/.env.production with DATABASE_URL="postgresql://…neon…" (from Neon), then run this command again.',
+      );
+    }
     process.exit(2);
   }
 }
