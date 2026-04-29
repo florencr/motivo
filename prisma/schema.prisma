@@ -99,27 +99,50 @@ model UserSession {
   @@index([expiresAt])
 }
 
-model Make {
-  id         String          @id @default(cuid())
-  name       String          @unique
-  slug       String          @unique
-  categoryId String?
-  category   VehicleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  models     Model[]
-  listings   Listing[]
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+model VehicleType {
+  id        String            @id @default(cuid())
+  name      String
+  slug      String            @unique
+  sortOrder Int               @default(0)
+  segments  VehicleSegment[]
+  makes     Make[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime        @updatedAt
 
-  @@index([categoryId])
+  @@index([sortOrder])
 }
 
-model VehicleCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  makes     Make[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model VehicleSegment {
+  id            String      @id @default(cuid())
+  vehicleTypeId String
+  vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  sortOrder     Int         @default(0)
+  makes         Make[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([vehicleTypeId, slug])
+  @@index([vehicleTypeId])
+}
+
+model Make {
+  id            String          @id @default(cuid())
+  name          String
+  slug          String
+  vehicleTypeId String
+  vehicleType   VehicleType     @relation(fields: [vehicleTypeId], references: [id], onDelete: Restrict)
+  segmentId     String?
+  segment       VehicleSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  models        Model[]
+  listings      Listing[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([vehicleTypeId, slug])
+  @@index([vehicleTypeId])
+  @@index([segmentId])
 }
 
 model Model {

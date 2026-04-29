@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
  * Bump when connection wiring changes. Dev (Turbopack) reuses a global client;
  * mismatch recreates the client after edits.
  */
-const PRISMA_CLIENT_CACHE_VERSION = 5;
+const PRISMA_CLIENT_CACHE_VERSION = 6;
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

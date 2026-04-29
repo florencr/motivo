@@ -50,7 +50,7 @@ export default function PopularMakes() {
           {popularMakes.map((make) => (
             <a
               key={make.name}
-              href={`/cars?make=${encodeURIComponent(make.name)}`}
+              href={`/cars?vehicleType=cars&make=${encodeURIComponent(make.name)}`}
               className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 transition hover:border-slate-400 hover:bg-slate-50"
             >
               <img

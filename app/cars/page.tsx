@@ -7,6 +7,8 @@ import { getImageUrlsFromFeatures } from "@/lib/listing-images";
 
 type CarsPageProps = {
   searchParams: Promise<{
+    vehicleType?: string;
+    segment?: string;
     make?: string;
     model?: string;
     registrationFrom?: string;
@@ -31,6 +33,7 @@ type CarListItem = {
   model: string;
   city: string;
   type: string;
+  segmentSlug: string;
   year: number;
   price: number;
   mileageKm: number;
@@ -48,6 +51,22 @@ type CarListItem = {
 
 function normalize(value?: string) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function mergeCarSearchParams(
+  base: Record<string, string | undefined>,
+  updates: Record<string, string | undefined | null>,
+) {
+  const merged: Record<string, string | undefined> = { ...base };
+  for (const [k, v] of Object.entries(updates)) {
+    if (v === null || v === "") delete merged[k];
+    else merged[k] = v;
+  }
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(merged)) {
+    if (v != null && String(v).trim() !== "") p.set(k, v);
+  }
+  return p.toString();
 }
 
 function getPriceValueLabel(priceValue: number) {
@@ -112,7 +131,7 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
   const make = normalize(params.make);
   const model = normalize(params.model);
   const category = normalize(params.category);
-  const type = normalize(params.type);
+  const type = normalize(params.type); // legacy hidden `type` param
   const registrationFrom = Number(params.registrationFrom || 0);
   const registrationTo = Number(params.registrationTo || 0);
   const mileageFrom = Number(params.mileageFrom || 0);
@@ -124,10 +143,32 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
   const selectedFuel = normalize(params.fuel);
   const sort = params.sort ?? "newest";
 
+  const vehicleTypeSlug = normalize(params.vehicleType) || "cars";
+  const segmentSlug = normalize(params.segment) || normalize(params.type);
+
+  const searchBase: Record<string, string | undefined> = {
+    vehicleType: params.vehicleType ?? vehicleTypeSlug,
+    segment: params.segment ?? params.type,
+    make: params.make,
+    model: params.model,
+    registrationFrom: params.registrationFrom,
+    registrationTo: params.registrationTo,
+    mileageFrom: params.mileageFrom,
+    mileageTo: params.mileageTo,
+    priceFrom: params.priceFrom,
+    priceTo: params.priceTo,
+    category: params.category,
+    type: params.type,
+    tag: params.tag,
+    city: params.city,
+    fuel: params.fuel,
+    sort: params.sort,
+  };
+
   const cityOptions = ["Berlin", "Munich", "Hamburg"];
   const fuelOptions = ["Petrol", "Diesel", "Electric", "Hybrid"];
   const tagOptions = ["No Accident", "1 Owner", "Warranty", "Inspected"];
-  const { makes, models } = await getCatalogData();
+  const { makes, models } = await getCatalogData({ vehicleTypeSlug });
 
   let listingsLoadError: string | null = null;
   let mockCars: CarListItem[];
@@ -140,6 +181,12 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
           select: {
             name: true,
             companyName: true,
+          },
+        },
+        make: {
+          include: {
+            vehicleType: true,
+            segment: true,
           },
         },
       },
@@ -163,7 +210,8 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
       make: item.makeName,
       model: item.modelName,
       city: item.city ?? "Unknown",
-      type: "cars",
+      type: item.make.vehicleType.slug,
+      segmentSlug: item.make.segment?.slug ?? "",
       year: item.year,
       price: Number(item.price),
       mileageKm: item.mileageKm,
@@ -190,7 +238,8 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
     const byMake = make ? car.make.toLowerCase().includes(make) : true;
     const byModel = model ? car.model.toLowerCase().includes(model) : true;
     const byCategory = category ? car.type.toLowerCase().includes(category) : true;
-    const byType = type ? car.type.toLowerCase() === type : true;
+    const byVehicleType = car.type === vehicleTypeSlug;
+    const bySegment = segmentSlug ? car.segmentSlug === segmentSlug : true;
     const byRegistration = registrationFrom > 0 ? car.year >= registrationFrom : true;
     const byRegistrationTo = registrationTo > 0 ? car.year <= registrationTo : true;
     const byMileageFrom = mileageFrom > 0 ? car.mileageKm >= mileageFrom : true;
@@ -206,7 +255,8 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
       byMake &&
       byModel &&
       byCategory &&
-      byType &&
+      byVehicleType &&
+      bySegment &&
       byRegistration &&
       byRegistrationTo &&
       byMileageFrom &&
@@ -240,6 +290,10 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
               </a>
             </div>
             <form action="/cars" method="GET" className="mt-4 space-y-3">
+              <input type="hidden" name="vehicleType" value={params.vehicleType ?? vehicleTypeSlug} />
+              {(params.segment ?? params.type) && (
+                <input type="hidden" name="segment" value={params.segment ?? params.type ?? ""} />
+              )}
               <select
                 name="make"
                 defaultValue={params.make}
@@ -343,24 +397,13 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {cityOptions.map((city) => {
                     const isActive = selectedCity === city.toLowerCase();
-                    const chipParams = new URLSearchParams();
-                    if (params.make) chipParams.set("make", params.make);
-                    if (params.model) chipParams.set("model", params.model);
-                    if (params.registrationFrom) chipParams.set("registrationFrom", params.registrationFrom);
-                    if (params.registrationTo) chipParams.set("registrationTo", params.registrationTo);
-                    if (params.mileageFrom) chipParams.set("mileageFrom", params.mileageFrom);
-                    if (params.mileageTo) chipParams.set("mileageTo", params.mileageTo);
-                    if (params.priceFrom) chipParams.set("priceFrom", params.priceFrom);
-                    if (params.priceTo) chipParams.set("priceTo", params.priceTo);
-                    if (params.category) chipParams.set("category", params.category);
-                    if (params.type) chipParams.set("type", params.type);
-                    if (params.tag) chipParams.set("tag", params.tag);
-                    if (params.fuel) chipParams.set("fuel", params.fuel);
-                    if (!isActive) chipParams.set("city", city);
+                    const qs = mergeCarSearchParams(searchBase, {
+                      city: isActive ? "" : city,
+                    });
                     return (
                       <a
                         key={city}
-                        href={`/cars?${chipParams.toString()}`}
+                        href={`/cars?${qs}`}
                         className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition ${
                           isActive
                             ? "border-slate-900 bg-slate-900 text-white"
@@ -378,24 +421,13 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {fuelOptions.map((fuel) => {
                     const isActive = selectedFuel === fuel.toLowerCase();
-                    const chipParams = new URLSearchParams();
-                    if (params.make) chipParams.set("make", params.make);
-                    if (params.model) chipParams.set("model", params.model);
-                    if (params.registrationFrom) chipParams.set("registrationFrom", params.registrationFrom);
-                    if (params.registrationTo) chipParams.set("registrationTo", params.registrationTo);
-                    if (params.mileageFrom) chipParams.set("mileageFrom", params.mileageFrom);
-                    if (params.mileageTo) chipParams.set("mileageTo", params.mileageTo);
-                    if (params.priceFrom) chipParams.set("priceFrom", params.priceFrom);
-                    if (params.priceTo) chipParams.set("priceTo", params.priceTo);
-                    if (params.category) chipParams.set("category", params.category);
-                    if (params.type) chipParams.set("type", params.type);
-                    if (params.tag) chipParams.set("tag", params.tag);
-                    if (params.city) chipParams.set("city", params.city);
-                    if (!isActive) chipParams.set("fuel", fuel);
+                    const qs = mergeCarSearchParams(searchBase, {
+                      fuel: isActive ? "" : fuel,
+                    });
                     return (
                       <a
                         key={fuel}
-                        href={`/cars?${chipParams.toString()}`}
+                        href={`/cars?${qs}`}
                         className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition ${
                           isActive
                             ? "border-slate-900 bg-slate-900 text-white"
@@ -413,24 +445,13 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {tagOptions.map((tag) => {
                     const isActive = selectedTag === tag.toLowerCase();
-                    const chipParams = new URLSearchParams();
-                    if (params.make) chipParams.set("make", params.make);
-                    if (params.model) chipParams.set("model", params.model);
-                    if (params.registrationFrom) chipParams.set("registrationFrom", params.registrationFrom);
-                    if (params.registrationTo) chipParams.set("registrationTo", params.registrationTo);
-                    if (params.mileageFrom) chipParams.set("mileageFrom", params.mileageFrom);
-                    if (params.mileageTo) chipParams.set("mileageTo", params.mileageTo);
-                    if (params.priceFrom) chipParams.set("priceFrom", params.priceFrom);
-                    if (params.priceTo) chipParams.set("priceTo", params.priceTo);
-                    if (params.category) chipParams.set("category", params.category);
-                    if (params.type) chipParams.set("type", params.type);
-                    if (params.city) chipParams.set("city", params.city);
-                    if (params.fuel) chipParams.set("fuel", params.fuel);
-                    if (!isActive) chipParams.set("tag", tag);
+                    const qs = mergeCarSearchParams(searchBase, {
+                      tag: isActive ? "" : tag,
+                    });
                     return (
                       <a
                         key={tag}
-                        href={`/cars?${chipParams.toString()}`}
+                        href={`/cars?${qs}`}
                         className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition ${
                           isActive
                             ? "border-slate-900 bg-slate-900 text-white"

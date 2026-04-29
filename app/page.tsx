@@ -1,5 +1,5 @@
 import PopularMakes from "./components/popular-makes";
-import { getCatalogData } from "@/lib/catalog";
+import { getCatalogData, getVehicleSegmentsForTypeSlug, getVehicleTypes } from "@/lib/catalog";
 
 type HomePageProps = {
   searchParams: Promise<{
@@ -9,18 +9,13 @@ type HomePageProps = {
 
 export default async function Home({ searchParams }: HomePageProps) {
   const params = await searchParams;
-  const selectedVehicleType = params.vehicleType ?? "cars";
-  const { makes, models } = await getCatalogData();
-
-  const categories = [
-    { name: "Sedan", type: "sedan" },
-    { name: "SUV", type: "suv" },
-    { name: "Sport", type: "sport" },
-    { name: "Van", type: "van" },
-    { name: "Electric", type: "electric" },
-    { name: "Pickup", type: "pickup" },
-  ];
-  const vehicleTabs = ["cars", "vans", "trucks", "bikes", "boats"];
+  const vehicleTypes = await getVehicleTypes();
+  const defaultSlug = vehicleTypes[0]?.slug ?? "cars";
+  const selectedVehicleType = params.vehicleType ?? defaultSlug;
+  const segments = await getVehicleSegmentsForTypeSlug(selectedVehicleType);
+  const { makes: makesForTab, models: modelsForTab } = await getCatalogData({
+    vehicleTypeSlug: selectedVehicleType,
+  });
 
   function CategoryIcon({ type }: { type: string }) {
     if (type === "electric") {
@@ -68,22 +63,24 @@ export default async function Home({ searchParams }: HomePageProps) {
             className="mt-8 w-full rounded-2xl bg-white/95 p-4 shadow-2xl backdrop-blur sm:p-6"
           >
             <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-200 pb-4">
-              {vehicleTabs.map((tab) => {
-                const isActive = selectedVehicleType === tab;
-                return (
-                  <a
-                    key={tab}
-                    href={`/?vehicleType=${encodeURIComponent(tab)}`}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize transition ${
-                      isActive
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
-                  >
-                    {tab}
-                  </a>
-                );
-              })}
+              {(vehicleTypes.length > 0 ? vehicleTypes : [{ id: "fallback", name: "Cars", slug: "cars" }]).map(
+                (tab) => {
+                  const isActive = selectedVehicleType === tab.slug;
+                  return (
+                    <a
+                      key={tab.id}
+                      href={`/?vehicleType=${encodeURIComponent(tab.slug)}`}
+                      className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize transition ${
+                        isActive
+                          ? "bg-slate-900 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {tab.name}
+                    </a>
+                  );
+                },
+              )}
             </div>
             <input type="hidden" name="vehicleType" value={selectedVehicleType} />
             <div className="grid gap-3 md:grid-cols-6">
@@ -92,7 +89,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                 className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500"
               >
                 <option value="">Make</option>
-                {makes.map((make) => (
+                {makesForTab.map((make) => (
                   <option key={make.id} value={make.name}>
                     {make.name}
                   </option>
@@ -103,7 +100,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                 className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500"
               >
                 <option value="">Model</option>
-                {models.map((model) => (
+                {modelsForTab.map((model) => (
                   <option key={model.id} value={model.name}>
                     {model.make.name} - {model.name}
                   </option>
@@ -149,18 +146,25 @@ export default async function Home({ searchParams }: HomePageProps) {
             Browse by Category
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {categories.map((category) => (
-              <a
-                key={category.type}
-                href={`/cars?type=${encodeURIComponent(category.type)}`}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-              >
-                <span className="text-slate-700" aria-hidden="true">
-                  <CategoryIcon type={category.type} />
-                </span>
-                <span>{category.name}</span>
-              </a>
-            ))}
+            {segments.length === 0 ? (
+              <p className="col-span-full text-sm text-slate-600">
+                No segments yet for this vehicle type. Add them in Admin → Catalog Manager (segments under this
+                type).
+              </p>
+            ) : (
+              segments.map((segment) => (
+                <a
+                  key={segment.id}
+                  href={`/cars?vehicleType=${encodeURIComponent(selectedVehicleType)}&segment=${encodeURIComponent(segment.slug)}`}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                >
+                  <span className="text-slate-700" aria-hidden="true">
+                    <CategoryIcon type={segment.slug} />
+                  </span>
+                  <span>{segment.name}</span>
+                </a>
+              ))
+            )}
           </div>
         </div>
       </section>

@@ -2,15 +2,17 @@
 
 import { useMemo, useState } from "react";
 
-type Make = { id: string; name: string };
+type VehicleTypeRow = { id: string; name: string; slug: string };
+type Make = { id: string; name: string; vehicleTypeId: string };
 type Model = { id: string; name: string; make: { name: string }; makeId?: string };
 
 type SellFormProps = {
+  vehicleTypes: VehicleTypeRow[];
   makes: Make[];
   models: Model[];
 };
 
-export default function SellForm({ makes, models }: SellFormProps) {
+export default function SellForm({ vehicleTypes, makes, models }: SellFormProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +49,7 @@ export default function SellForm({ makes, models }: SellFormProps) {
   }
 
   const [title, setTitle] = useState("");
+  const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
   const [makeId, setMakeId] = useState("");
   const [modelId, setModelId] = useState("");
   const [year, setYear] = useState("");
@@ -56,6 +59,11 @@ export default function SellForm({ makes, models }: SellFormProps) {
   const [transmission, setTransmission] = useState("MANUAL");
   const [city, setCity] = useState("");
   const [description, setDescription] = useState("");
+
+  const filteredMakes = useMemo(() => {
+    if (!vehicleTypeId) return makes;
+    return makes.filter((m) => m.vehicleTypeId === vehicleTypeId);
+  }, [makes, vehicleTypeId]);
 
   const filteredModels = useMemo(() => {
     if (!makeId) return models;
@@ -119,6 +127,7 @@ export default function SellForm({ makes, models }: SellFormProps) {
       }
       setSuccess("Vehicle listing created successfully.");
       setTitle("");
+      setMakeId("");
       setModelId("");
       setYear("");
       setMileageKm("");
@@ -147,7 +156,24 @@ export default function SellForm({ makes, models }: SellFormProps) {
         className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
       />
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <select
+          value={vehicleTypeId}
+          onChange={(e) => {
+            setVehicleTypeId(e.target.value);
+            setMakeId("");
+            setModelId("");
+          }}
+          required
+          className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+        >
+          <option value="">Vehicle type</option>
+          {vehicleTypes.map((vt) => (
+            <option key={vt.id} value={vt.id}>
+              {vt.name}
+            </option>
+          ))}
+        </select>
         <select
           value={makeId}
           onChange={(e) => {
@@ -158,7 +184,7 @@ export default function SellForm({ makes, models }: SellFormProps) {
           className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
         >
           <option value="">Select make</option>
-          {makes.map((make) => (
+          {filteredMakes.map((make) => (
             <option key={make.id} value={make.id}>
               {make.name}
             </option>
