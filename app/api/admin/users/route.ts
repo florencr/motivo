@@ -15,9 +15,23 @@ export async function GET(req: Request) {
       name: true,
       email: true,
       role: true,
+      sellerType: true,
+      companyName: true,
       isActive: true,
       isVerified: true,
       createdAt: true,
+      listings: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          currency: true,
+          year: true,
+          isPublished: true,
+          createdAt: true,
+        },
+      },
     },
   });
   return NextResponse.json({ users });

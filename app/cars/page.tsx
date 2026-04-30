@@ -1,9 +1,13 @@
 import CarGallery from "../components/car-gallery";
 import CardActions from "../components/card-actions";
 import CarsSortSelect from "../components/cars-sort-select";
+import CarsFiltersPanel from "../components/cars-filters-panel";
 import { getCatalogData } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
-import { getImageUrlsFromFeatures } from "@/lib/listing-images";
+import { getImageUrlsFromFeatures, getSelectedTagsFromFeatures } from "@/lib/listing-images";
+import { evaluateListingPrice } from "@/lib/price-evaluator";
+import { getActiveListingTagOptions, getCityOptionsFromListings } from "@/lib/site-data";
+import { CalendarDays, Droplets, Fuel, Gauge, Settings2, Zap } from "lucide-react";
 
 type CarsPageProps = {
   searchParams: Promise<{
@@ -23,6 +27,8 @@ type CarsPageProps = {
     city?: string;
     fuel?: string;
     sort?: string;
+    page?: string;
+    perPage?: string;
   }>;
 };
 
@@ -53,22 +59,6 @@ function normalize(value?: string) {
   return value?.trim().toLowerCase() ?? "";
 }
 
-function mergeCarSearchParams(
-  base: Record<string, string | undefined>,
-  updates: Record<string, string | undefined | null>,
-) {
-  const merged: Record<string, string | undefined> = { ...base };
-  for (const [k, v] of Object.entries(updates)) {
-    if (v === null || v === "") delete merged[k];
-    else merged[k] = v;
-  }
-  const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(merged)) {
-    if (v != null && String(v).trim() !== "") p.set(k, v);
-  }
-  return p.toString();
-}
-
 function getPriceValueLabel(priceValue: number) {
   if (priceValue >= 4) return "Good Price";
   if (priceValue === 3) return "Fair Price";
@@ -76,54 +66,26 @@ function getPriceValueLabel(priceValue: number) {
 }
 
 function SpecIcon({ kind }: { kind: "fuel" | "registration" | "transmission" | "engine" | "power" | "mileage" }) {
+  const iconClass = "h-4 w-4";
+  const strokeWidth = 1.8;
+
   if (kind === "registration") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <rect x="3.5" y="5" width="17" height="15" rx="2" />
-        <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" />
-      </svg>
-    );
+    return <CalendarDays className={iconClass} strokeWidth={strokeWidth} />;
   }
   if (kind === "transmission") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="12" cy="6" r="2.2" />
-        <circle cx="7" cy="12" r="2.2" />
-        <circle cx="17" cy="12" r="2.2" />
-        <circle cx="12" cy="18" r="2.2" />
-        <path d="M12 8.2V15.8M9.2 12H14.8" />
-      </svg>
-    );
+    return <Settings2 className={iconClass} strokeWidth={strokeWidth} />;
   }
   if (kind === "engine") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M3 10h5l2-2h5l1.5 2H21v6h-4l-1 2h-6l-2-2H3z" />
-      </svg>
-    );
+    return <Fuel className={iconClass} strokeWidth={strokeWidth} />;
   }
   if (kind === "power") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="12" cy="12" r="8" />
-        <path d="M12 12 16.5 9.5M12 6v2M18 12h-2M12 18v-2M6 12h2" />
-      </svg>
-    );
+    return <Zap className={iconClass} strokeWidth={strokeWidth} />;
   }
   if (kind === "mileage") {
-    return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="12" cy="13" r="6.5" />
-        <path d="M12 13 15.5 10.5M6.5 13H4M19.5 13H22" />
-      </svg>
-    );
+    return <Gauge className={iconClass} strokeWidth={strokeWidth} />;
   }
 
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6.5 9h8l2.5 3.5-2.5 3.5h-8L4 12.5 6.5 9Z" />
-    </svg>
-  );
+  return <Droplets className={iconClass} strokeWidth={strokeWidth} />;
 }
 
 export default async function CarsPage({ searchParams }: CarsPageProps) {
@@ -142,33 +104,18 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
   const selectedCity = normalize(params.city);
   const selectedFuel = normalize(params.fuel);
   const sort = params.sort ?? "newest";
+  const currentPage = Math.max(1, Number(params.page ?? "1") || 1);
+  const requestedPerPage = Number(params.perPage ?? "6") || 6;
+  const perPage = [6, 12, 24].includes(requestedPerPage) ? requestedPerPage : 6;
 
   const vehicleTypeSlug = normalize(params.vehicleType) || "cars";
   const segmentSlug = normalize(params.segment) || normalize(params.type);
 
-  const searchBase: Record<string, string | undefined> = {
-    vehicleType: params.vehicleType ?? vehicleTypeSlug,
-    segment: params.segment ?? params.type,
-    make: params.make,
-    model: params.model,
-    registrationFrom: params.registrationFrom,
-    registrationTo: params.registrationTo,
-    mileageFrom: params.mileageFrom,
-    mileageTo: params.mileageTo,
-    priceFrom: params.priceFrom,
-    priceTo: params.priceTo,
-    category: params.category,
-    type: params.type,
-    tag: params.tag,
-    city: params.city,
-    fuel: params.fuel,
-    sort: params.sort,
-  };
-
-  const cityOptions = ["Berlin", "Munich", "Hamburg"];
-  const fuelOptions = ["Petrol", "Diesel", "Electric", "Hybrid"];
-  const tagOptions = ["No Accident", "1 Owner", "Warranty", "Inspected"];
   const { makes, models } = await getCatalogData({ vehicleTypeSlug });
+  const [cityOptions, tagOptions] = await Promise.all([
+    getCityOptionsFromListings(),
+    getActiveListingTagOptions(),
+  ]);
 
   let listingsLoadError: string | null = null;
   let mockCars: CarListItem[];
@@ -191,6 +138,7 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
         },
       },
     });
+    const withNumericPrice = listings.map((item) => ({ ...item, priceNum: Number(item.price) }));
     mockCars = listings.map((item) => {
     const photos = getImageUrlsFromFeatures(item.features);
     const fuelMap: Record<string, string> = {
@@ -203,6 +151,37 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
       MANUAL: "Manual",
       AUTOMATIC: "Automatic",
     };
+
+    const priceEval = evaluateListingPrice(
+      {
+        id: item.id,
+        price: Number(item.price),
+        year: item.year,
+        mileageKm: item.mileageKm,
+        powerHp: item.powerHp,
+        ownerCount: item.ownerCount,
+        hasAccidentHistory: item.hasAccidentHistory,
+        damageSeverity: item.damageSeverity,
+        hasServiceHistory: item.hasServiceHistory,
+        modelId: item.modelId,
+        makeId: item.makeId,
+        features: item.features,
+      },
+      withNumericPrice.map((x) => ({
+        id: x.id,
+        price: x.priceNum,
+        year: x.year,
+        mileageKm: x.mileageKm,
+        powerHp: x.powerHp,
+        ownerCount: x.ownerCount,
+        hasAccidentHistory: x.hasAccidentHistory,
+        damageSeverity: x.damageSeverity,
+        hasServiceHistory: x.hasServiceHistory,
+        modelId: x.modelId,
+        makeId: x.makeId,
+        features: x.features,
+      })),
+    );
 
     return {
       id: item.id,
@@ -221,10 +200,10 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
       powerHp: item.powerHp ?? 0,
       sellerUsername: item.seller.companyName || item.seller.name || "seller",
       isTaxRefundable: item.isTaxRefundable,
-      priceValue: 3,
+      priceValue: priceEval.priceValue,
       sellerDescription: item.description,
-      vendorTags: [],
-      photos: photos.length > 0 ? photos : ["https://placehold.co/1200x800?text=No+Photo"],
+      vendorTags: getSelectedTagsFromFeatures(item.features),
+      photos: photos.length > 0 ? photos : ["/images/no-photo.svg"],
     };
     });
   } catch (err) {
@@ -278,229 +257,96 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
     return b.year - a.year; // newest
   });
 
+  const totalPages = Math.max(1, Math.ceil(sortedCars.length / perPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const start = (safePage - 1) * perPage;
+  const paginatedCars = sortedCars.slice(start, start + perPage);
+
+  function buildCarsQuery(overrides: Record<string, string | null>) {
+    const qp = new URLSearchParams();
+    const setIf = (key: string, value?: string) => {
+      if (value && value.trim() !== "") qp.set(key, value);
+    };
+    setIf("vehicleType", params.vehicleType ?? vehicleTypeSlug);
+    setIf("segment", params.segment ?? params.type);
+    setIf("make", params.make);
+    setIf("model", params.model);
+    setIf("registrationFrom", params.registrationFrom);
+    setIf("registrationTo", params.registrationTo);
+    setIf("mileageFrom", params.mileageFrom);
+    setIf("mileageTo", params.mileageTo);
+    setIf("priceFrom", params.priceFrom);
+    setIf("priceTo", params.priceTo);
+    setIf("city", params.city);
+    setIf("fuel", params.fuel);
+    setIf("tag", params.tag);
+    setIf("sort", params.sort);
+    setIf("perPage", params.perPage ?? String(perPage));
+    setIf("page", params.page ?? String(safePage));
+
+    for (const [key, value] of Object.entries(overrides)) {
+      if (value == null || value === "") qp.delete(key);
+      else qp.set(key, value);
+    }
+    return qp.toString();
+  }
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="lg:grid lg:grid-cols-4 lg:gap-6">
           <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
-            <input id="mobile-filters-toggle" type="checkbox" className="peer sr-only lg:hidden" />
-            <div className="flex items-center justify-between gap-2">
-              <label
-                htmlFor="mobile-filters-toggle"
-                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg py-1 -my-1 lg:cursor-default lg:pointer-events-none"
-                title="Show or hide filters"
-              >
-                <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold text-slate-900">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5 shrink-0 text-slate-600"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 6h16M4 12h10M4 18h14" />
-                    <circle cx="14" cy="6" r="2" fill="currentColor" stroke="none" />
-                    <circle cx="10" cy="12" r="2" fill="currentColor" stroke="none" />
-                    <circle cx="16" cy="18" r="2" fill="currentColor" stroke="none" />
-                  </svg>
-                  Filters
-                </h2>
-              </label>
-              <a href="/cars" className="shrink-0 text-xs text-slate-600">
-                Clear Filters
-              </a>
-            </div>
-            <div className="mt-4 hidden peer-checked:block lg:block">
-              <form action="/cars" method="GET" className="space-y-3">
-              <input type="hidden" name="vehicleType" value={params.vehicleType ?? vehicleTypeSlug} />
-              {(params.segment ?? params.type) && (
-                <input type="hidden" name="segment" value={params.segment ?? params.type ?? ""} />
-              )}
-              <select
-                name="make"
-                defaultValue={params.make}
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500"
-              >
-                <option value="">Make</option>
-                {makes.map((item) => (
-                  <option key={item.id} value={item.name}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="model"
-                defaultValue={params.model}
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500"
-              >
-                <option value="">Model</option>
-                {models.map((item) => (
-                  <option key={item.id} value={item.name}>
-                    {item.make.name} - {item.name}
-                  </option>
-                ))}
-              </select>
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-600">Price</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    name="priceFrom"
-                    defaultValue={params.priceFrom}
-                    type="number"
-                    min="0"
-                    placeholder="From"
-                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                  <input
-                    name="priceTo"
-                    defaultValue={params.priceTo}
-                    type="number"
-                    min="0"
-                    placeholder="To"
-                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-600">Registration</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    name="registrationFrom"
-                    defaultValue={params.registrationFrom}
-                    type="number"
-                    min="1900"
-                    placeholder="From"
-                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                  <input
-                    name="registrationTo"
-                    defaultValue={params.registrationTo}
-                    type="number"
-                    min="1900"
-                    placeholder="To"
-                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-600">Mileage (km)</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    name="mileageFrom"
-                    defaultValue={params.mileageFrom}
-                    type="number"
-                    min="0"
-                    placeholder="From"
-                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                  <input
-                    name="mileageTo"
-                    defaultValue={params.mileageTo}
-                    type="number"
-                    min="0"
-                    placeholder="To"
-                    className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
-                  />
-                </div>
-              </div>
-              {params.type && <input type="hidden" name="type" value={params.type} />}
-              {params.city && <input type="hidden" name="city" value={params.city} />}
-              {params.fuel && <input type="hidden" name="fuel" value={params.fuel} />}
-              <button
-                type="submit"
-                className="h-10 w-full rounded-lg bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-700"
-              >
-                Apply Filters
-              </button>
-              </form>
-              <div className="mt-5 space-y-4 border-t border-slate-200 pt-4">
-              <div>
-                <p className="text-xs font-medium text-slate-600">Location</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {cityOptions.map((city) => {
-                    const isActive = selectedCity === city.toLowerCase();
-                    const qs = mergeCarSearchParams(searchBase, {
-                      city: isActive ? "" : city,
-                    });
-                    return (
-                      <a
-                        key={city}
-                        href={`/cars?${qs}`}
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition ${
-                          isActive
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
-                        }`}
-                      >
-                        {city}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-600">Fuel</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {fuelOptions.map((fuel) => {
-                    const isActive = selectedFuel === fuel.toLowerCase();
-                    const qs = mergeCarSearchParams(searchBase, {
-                      fuel: isActive ? "" : fuel,
-                    });
-                    return (
-                      <a
-                        key={fuel}
-                        href={`/cars?${qs}`}
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition ${
-                          isActive
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
-                        }`}
-                      >
-                        {fuel}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-600">Other Tags</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {tagOptions.map((tag) => {
-                    const isActive = selectedTag === tag.toLowerCase();
-                    const qs = mergeCarSearchParams(searchBase, {
-                      tag: isActive ? "" : tag,
-                    });
-                    return (
-                      <a
-                        key={tag}
-                        href={`/cars?${qs}`}
-                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition ${
-                          isActive
-                            ? "border-slate-900 bg-slate-900 text-white"
-                            : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
-                        }`}
-                      >
-                        {tag}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-              </div>
-            </div>
+            <CarsFiltersPanel
+              vehicleType={params.vehicleType ?? vehicleTypeSlug}
+              segment={params.segment}
+              legacyType={params.type}
+              initialMake={params.make}
+              initialModel={params.model}
+              initialPriceFrom={params.priceFrom}
+              initialPriceTo={params.priceTo}
+              initialRegistrationFrom={params.registrationFrom}
+              initialRegistrationTo={params.registrationTo}
+              initialMileageFrom={params.mileageFrom}
+              initialMileageTo={params.mileageTo}
+              initialCity={params.city}
+              initialFuel={params.fuel}
+              initialTag={params.tag}
+              initialPerPage={params.perPage}
+              cityOptions={cityOptions}
+              tagOptions={tagOptions}
+              makes={makes}
+              models={models}
+            />
           </aside>
 
           <section className="mt-6 lg:col-span-3 lg:mt-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h1 className="text-3xl font-bold text-slate-900">Car Results</h1>
-              <div className="flex items-center gap-2">
-                <label htmlFor="sort" className="text-sm text-slate-600">
-                  Sort by
-                </label>
-                <CarsSortSelect value={sort} />
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-600">Per page</span>
+                  <div className="flex items-center gap-1">
+                    {[6, 12, 24].map((size) => (
+                      <a
+                        key={size}
+                        href={`/cars?${buildCarsQuery({ perPage: String(size), page: "1" })}`}
+                        className={`rounded border px-2 py-1 text-xs ${
+                          perPage === size
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-300 text-slate-700"
+                        }`}
+                      >
+                        {size}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="sort" className="text-sm text-slate-600">
+                    Sort by
+                  </label>
+                  <CarsSortSelect value={sort} />
+                </div>
               </div>
             </div>
             <p className="mt-2 text-sm text-slate-600">
@@ -518,7 +364,7 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
                   No cars found. Try changing your search filters.
                 </div>
               ) : (
-                sortedCars.map((car) => (
+                paginatedCars.map((car) => (
                   <article
                     key={car.id}
                     className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:flex"
@@ -644,6 +490,29 @@ export default async function CarsPage({ searchParams }: CarsPageProps) {
                 ))
               )}
             </div>
+            {totalPages > 1 ? (
+              <div className="mt-6 flex items-center justify-between">
+                <a
+                  href={safePage > 1 ? `/cars?${buildCarsQuery({ page: String(safePage - 1) })}` : "#"}
+                  className={`rounded border px-3 py-1 text-sm ${
+                    safePage > 1 ? "border-slate-300 text-slate-700" : "border-slate-200 text-slate-400"
+                  }`}
+                >
+                  Previous
+                </a>
+                <p className="text-sm text-slate-600">
+                  Page {safePage} of {totalPages}
+                </p>
+                <a
+                  href={safePage < totalPages ? `/cars?${buildCarsQuery({ page: String(safePage + 1) })}` : "#"}
+                  className={`rounded border px-3 py-1 text-sm ${
+                    safePage < totalPages ? "border-slate-300 text-slate-700" : "border-slate-200 text-slate-400"
+                  }`}
+                >
+                  Next
+                </a>
+              </div>
+            ) : null}
           </section>
         </div>
       </div>

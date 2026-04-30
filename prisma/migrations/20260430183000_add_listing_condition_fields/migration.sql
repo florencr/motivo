@@ -1,0 +1,5 @@
+ALTER TABLE "Listing"
+ADD COLUMN "ownerCount" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN "hasAccidentHistory" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "damageSeverity" TEXT,
+ADD COLUMN "hasServiceHistory" BOOLEAN NOT NULL DEFAULT false;

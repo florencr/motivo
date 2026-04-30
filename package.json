@@ -12,11 +12,14 @@
     "db:down": "docker compose down",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:reset-user-password": "node scripts/reset-user-password.mjs"
+    "db:reset-user-password": "node scripts/reset-user-password.mjs",
+    "db:seed-catalog": "node scripts/seed-catalog.mjs",
+    "db:seed-samples": "node scripts/seed-sample-listings.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "lucide-react": "^1.14.0",
     "next": "16.2.4",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",

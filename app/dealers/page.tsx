@@ -105,7 +105,7 @@ export default async function DealersPage() {
                     <img
                       src={
                         dealer.logoUrl ??
-                        "https://placehold.co/96x96/e2e8f0/64748b?text=Logo"
+                        "/images/no-logo.svg"
                       }
                       alt={`${dealer.displayName} logo`}
                       className="h-16 w-16 shrink-0 rounded-lg border border-slate-200 object-cover"

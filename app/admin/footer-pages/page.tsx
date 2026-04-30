@@ -59,14 +59,11 @@ export default function AdminFooterPages() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-3xl font-bold text-slate-900">Admin Footer Pages</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Create and manage pages linked from footer columns.
-          </p>
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    <main className="space-y-6">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="text-3xl font-bold text-slate-900">Admin Footer Pages</h1>
+        <p className="mt-2 text-sm text-slate-600">Create and manage pages linked from footer columns.</p>
+        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <input
@@ -113,32 +110,31 @@ export default function AdminFooterPages() {
           >
             Add Footer Page
           </button>
-        </div>
+      </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Existing Pages</h2>
-          <div className="mt-3 space-y-2">
-            {pages.map((page) => (
-              <div
-                key={page.id}
-                className="flex items-center justify-between rounded border border-slate-200 p-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-800">{page.title}</p>
-                  <p className="text-xs text-slate-600">
-                    /info/{page.slug} - {page.section}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => togglePublished(page)}
-                  className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
-                >
-                  {page.isPublished ? "Unpublish" : "Publish"}
-                </button>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-slate-900">Existing Pages</h2>
+        <div className="mt-3 space-y-2">
+          {pages.map((page) => (
+            <div
+              key={page.id}
+              className="flex items-center justify-between rounded border border-slate-200 p-3"
+            >
+              <div>
+                <p className="text-sm font-medium text-slate-800">{page.title}</p>
+                <p className="text-xs text-slate-600">
+                  /info/{page.slug} - {page.section}
+                </p>
               </div>
-            ))}
-          </div>
+              <button
+                type="button"
+                onClick={() => togglePublished(page)}
+                className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
+              >
+                {page.isPublished ? "Unpublish" : "Publish"}
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </main>

@@ -3,6 +3,39 @@ import { getSessionUserFromRequest } from "@/lib/session-user";
 import { toSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
 
+const VEHICLE_TYPE_ICON_KEYS = new Set(["car", "motorcycle", "truck", "van", "bus", "boat"]);
+const VEHICLE_SEGMENT_ICON_KEYS = new Set([
+  "sedan",
+  "suv",
+  "hatchback",
+  "coupe",
+  "wagon",
+  "van",
+  "pickup",
+  "sport",
+  "adventure",
+  "motoboat",
+  "yacht",
+  "sailing",
+  "boat",
+]);
+
+function normalizeVehicleTypeIcon(input: unknown) {
+  const value = String(input ?? "")
+    .trim()
+    .toLowerCase();
+  if (!value) return null;
+  return VEHICLE_TYPE_ICON_KEYS.has(value) ? value : "car";
+}
+
+function normalizeVehicleSegmentIcon(input: unknown) {
+  const value = String(input ?? "")
+    .trim()
+    .toLowerCase();
+  if (!value) return null;
+  return VEHICLE_SEGMENT_ICON_KEYS.has(value) ? value : "sedan";
+}
+
 export async function GET(req: Request) {
   const user = await getSessionUserFromRequest(req);
   if (!user || user.role !== "ADMIN") {
@@ -49,8 +82,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "invalid name" }, { status: 400 });
       }
       const sortOrder = Number(body?.sortOrder ?? 0) || 0;
+      const icon = normalizeVehicleTypeIcon(body?.icon);
       const vehicleType = await prisma.vehicleType.create({
-        data: { name, slug, sortOrder },
+        data: { name, slug, icon: icon || null, sortOrder },
       });
       return NextResponse.json({ vehicleType });
     }
@@ -68,8 +102,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "invalid name" }, { status: 400 });
       }
       const sortOrder = Number(body?.sortOrder ?? 0) || 0;
+      const icon = normalizeVehicleSegmentIcon(body?.icon);
       const segment = await prisma.vehicleSegment.create({
-        data: { name, slug, sortOrder, vehicleTypeId },
+        data: { name, slug, icon: icon || null, sortOrder, vehicleTypeId },
       });
       return NextResponse.json({ segment });
     }
@@ -147,13 +182,17 @@ export async function PATCH(req: Request) {
     if (entity === "vehicleType") {
       const name = body?.name != null ? String(body.name).trim() : undefined;
       const sortOrder = body?.sortOrder != null ? Number(body.sortOrder) : undefined;
-      const data: { name?: string; slug?: string; sortOrder?: number } = {};
+      const icon = body?.icon !== undefined ? normalizeVehicleTypeIcon(body.icon) : undefined;
+      const data: { name?: string; slug?: string; icon?: string | null; sortOrder?: number } = {};
       if (name !== undefined) {
         if (!name) return NextResponse.json({ error: "invalid name" }, { status: 400 });
         data.name = name;
         const slug = toSlug(name);
         if (!slug) return NextResponse.json({ error: "invalid name" }, { status: 400 });
         data.slug = slug;
+      }
+      if (icon !== undefined) {
+        data.icon = icon || null;
       }
       if (sortOrder !== undefined && !Number.isNaN(sortOrder)) {
         data.sortOrder = sortOrder;
@@ -169,9 +208,11 @@ export async function PATCH(req: Request) {
       const name = body?.name != null ? String(body.name).trim() : undefined;
       const sortOrder = body?.sortOrder != null ? Number(body.sortOrder) : undefined;
       const vehicleTypeId = body?.vehicleTypeId != null ? String(body.vehicleTypeId).trim() : undefined;
+      const icon = body?.icon !== undefined ? normalizeVehicleSegmentIcon(body.icon) : undefined;
       const data: {
         name?: string;
         slug?: string;
+        icon?: string | null;
         sortOrder?: number;
         vehicleTypeId?: string;
       } = {};
@@ -184,6 +225,9 @@ export async function PATCH(req: Request) {
       }
       if (sortOrder !== undefined && !Number.isNaN(sortOrder)) {
         data.sortOrder = sortOrder;
+      }
+      if (icon !== undefined) {
+        data.icon = icon || null;
       }
       if (vehicleTypeId !== undefined) {
         if (!vehicleTypeId) return NextResponse.json({ error: "invalid vehicleTypeId" }, { status: 400 });

@@ -109,7 +109,7 @@ export default function DashboardListingsPage() {
                     <td className="py-2">
                       <div className="flex items-center gap-3">
                         <img
-                          src={item.coverImageUrl ?? "https://placehold.co/120x80?text=No+Photo"}
+                          src={item.coverImageUrl ?? "/images/no-photo.svg"}
                           alt={item.title}
                           className="h-12 w-16 rounded border border-slate-200 object-cover"
                           loading="lazy"

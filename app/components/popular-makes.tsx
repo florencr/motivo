@@ -29,7 +29,7 @@ export default function PopularMakes({ makes }: PopularMakesProps) {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h2 className="text-xl font-semibold text-slate-900">Popular Makes</h2>
+        <h3 className="text-xl font-semibold text-slate-900">Popular Makes</h3>
         <p className="mt-1 text-sm text-slate-600">Based on published listings in your catalog.</p>
         {makes.length === 0 ? (
           <p className="mt-4 text-sm text-slate-600">

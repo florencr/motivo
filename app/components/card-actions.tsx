@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GitCompareArrows, Heart, Share2 } from "lucide-react";
 
 type CardActionsProps = {
   carTitle: string;
@@ -21,7 +22,7 @@ export default function CardActions({
   const [isCompared, setIsCompared] = useState(false);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       {showViewButton && (
         <a
           href={viewHref}
@@ -34,37 +35,37 @@ export default function CardActions({
         type="button"
         onClick={() => setIsWishlisted((value) => !value)}
         aria-label={`Add ${carTitle} to wishlist`}
-        className={`inline-flex h-10 items-center justify-center rounded-lg border text-sm font-medium transition ${
+        className={`inline-flex h-10 items-center justify-center rounded-lg border transition ${
           isWishlisted
             ? "border-slate-900 bg-slate-900 text-white"
             : "border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-100"
-        } ${showTextLabels ? "gap-2 px-3" : "w-10 text-lg"}`}
+        } ${showTextLabels ? "gap-1.5 px-2.5 text-xs font-medium" : "w-10 text-base"}`}
       >
-        <span>{isWishlisted ? "♥" : "♡"}</span>
+        <Heart className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`} strokeWidth={2} />
         {showTextLabels && <span>Add to wishlist</span>}
       </button>
       <button
         type="button"
         onClick={() => setIsCompared((value) => !value)}
         aria-label={`Add ${carTitle} to compare`}
-        className={`inline-flex h-10 items-center justify-center rounded-lg border text-sm font-medium transition ${
+        className={`inline-flex h-10 items-center justify-center rounded-lg border transition ${
           isCompared
             ? "border-slate-900 bg-slate-900 text-white"
             : "border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-100"
-        } ${showTextLabels ? "gap-2 px-3" : "w-10 text-base"}`}
+        } ${showTextLabels ? "gap-1.5 px-2.5 text-xs font-medium" : "w-10 text-base"}`}
       >
-        <span>⇄</span>
+        <GitCompareArrows className="h-5 w-5" strokeWidth={2} />
         {showTextLabels && <span>Add to compare</span>}
       </button>
       {showShareButton && (
         <button
           type="button"
           aria-label={`Share ${carTitle}`}
-          className={`inline-flex h-10 items-center justify-center rounded-lg border text-sm font-medium transition border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-100 ${
-            showTextLabels ? "gap-2 px-3" : "w-10 text-base"
+          className={`inline-flex h-10 items-center justify-center rounded-lg border transition border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-100 ${
+            showTextLabels ? "gap-1.5 px-2.5 text-xs font-medium" : "w-10 text-base"
           }`}
         >
-          <span>↗</span>
+          <Share2 className="h-5 w-5" strokeWidth={2} />
           {showTextLabels && <span>Share</span>}
         </button>
       )}

@@ -93,10 +93,7 @@ export default async function DealerInventoryPage({ params }: PageProps) {
 
         <header className="mb-8 flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-start sm:gap-6">
           <img
-            src={
-              dealer.companyLogoUrl ??
-              "https://placehold.co/112x112/e2e8f0/64748b?text=Logo"
-            }
+            src={dealer.companyLogoUrl ?? "/images/no-logo.svg"}
             alt={`${displayName} logo`}
             className="h-28 w-28 shrink-0 rounded-xl border border-slate-200 object-cover"
           />
@@ -141,7 +138,7 @@ export default async function DealerInventoryPage({ params }: PageProps) {
                 const imageUrls =
                   photos.length > 0
                     ? photos
-                    : ["https://placehold.co/1200x800?text=No+Photo"];
+                    : ["/images/no-photo.svg"];
                 const fuel = fuelMap[item.fuelType] ?? String(item.fuelType);
                 const transmission =
                   transmissionMap[item.transmission] ??

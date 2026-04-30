@@ -4,7 +4,8 @@ import CarGallery from "../../components/car-gallery";
 import CardActions from "../../components/card-actions";
 import FinanceCalculator from "../../components/finance-calculator";
 import { prisma } from "@/lib/prisma";
-import { getImageUrlsFromFeatures } from "@/lib/listing-images";
+import { getFeatureListFromFeatures, getImageUrlsFromFeatures, getSelectedTagsFromFeatures } from "@/lib/listing-images";
+import { evaluateListingPrice } from "@/lib/price-evaluator";
 
 type CarDetailsPageProps = {
   params: Promise<{ id: string }>;
@@ -59,15 +60,75 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
     notFound();
   }
 
-  const similarListings = await prisma.listing.findMany({
+  const pricingPool = await prisma.listing.findMany({
+    where: { isPublished: true },
+    select: {
+      id: true,
+      price: true,
+      year: true,
+      mileageKm: true,
+      powerHp: true,
+      ownerCount: true,
+      hasAccidentHistory: true,
+      damageSeverity: true,
+      hasServiceHistory: true,
+      modelId: true,
+      makeId: true,
+      features: true,
+    },
+  });
+
+  const priceEval = evaluateListingPrice(
+    {
+      id: listing.id,
+      price: Number(listing.price),
+      year: listing.year,
+      mileageKm: listing.mileageKm,
+      powerHp: listing.powerHp,
+      ownerCount: listing.ownerCount,
+      hasAccidentHistory: listing.hasAccidentHistory,
+      damageSeverity: listing.damageSeverity,
+      hasServiceHistory: listing.hasServiceHistory,
+      modelId: listing.modelId,
+      makeId: listing.makeId,
+      features: listing.features,
+    },
+    pricingPool.map((item) => ({
+      id: item.id,
+      price: Number(item.price),
+      year: item.year,
+      mileageKm: item.mileageKm,
+      powerHp: item.powerHp,
+      ownerCount: item.ownerCount,
+      hasAccidentHistory: item.hasAccidentHistory,
+      damageSeverity: item.damageSeverity,
+      hasServiceHistory: item.hasServiceHistory,
+      modelId: item.modelId,
+      makeId: item.makeId,
+      features: item.features,
+    })),
+  );
+
+  const similarListingsPrimary = await prisma.listing.findMany({
     where: {
       isPublished: true,
       id: { not: listing.id },
       makeId: listing.makeId,
     },
     orderBy: { createdAt: "desc" },
-    take: 3,
+    take: 4,
   });
+  const similarListings =
+    similarListingsPrimary.length > 0
+      ? similarListingsPrimary
+      : await prisma.listing.findMany({
+          where: {
+            isPublished: true,
+            id: { not: listing.id },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 4,
+        });
 
   const car = {
     id: listing.id,
@@ -87,34 +148,22 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
     sellerLogo:
       listing.seller.companyLogoUrl ||
       listing.seller.avatarUrl ||
-      "https://placehold.co/200x200?text=Seller",
+      "/images/no-logo.svg",
     sellerPhone: listing.seller.phone ?? "-",
     sellerAddress: listing.seller.address ?? "Address not provided",
     sellerAbout:
-      "Trusted local seller focused on transparent vehicle history and clean transactions.",
-    sellerRating: 4.7,
-    sellerReviews: 126,
-    priceValue: 3,
+      listing.seller.profileDescription ||
+      "No profile description provided yet.",
+    sellerRating: listing.seller.dealerRating ?? 0,
+    sellerReviews: listing.seller.dealerReviewCount ?? 0,
+    priceValue: priceEval.priceValue,
     isTaxRefundable: listing.isTaxRefundable,
     sellerDescription: listing.description,
-    vendorTags: [] as string[],
-    features: [
-      "ABS",
-      "Adaptive cornering lights",
-      "Adaptive Cruise Control",
-      "Air suspension",
-      "Alarm system",
-      "Alloy wheels",
-      "Ambient lighting",
-      "Arm rest",
-      "Autom. dimming interior mirror",
-      "Blind spot assist",
-      "Bluetooth",
-      "Cargo barrier",
-    ],
+    vendorTags: getSelectedTagsFromFeatures(listing.features),
+    features: getFeatureListFromFeatures(listing.features),
     photos: (() => {
       const urls = getImageUrlsFromFeatures(listing.features);
-      return urls.length > 0 ? urls : ["https://placehold.co/1200x800?text=No+Photo"];
+      return urls.length > 0 ? urls : ["/images/no-photo.svg"];
     })(),
   };
   const similarCars = similarListings.map((item) => {
@@ -122,7 +171,7 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
     return {
       id: item.id,
       title: item.title,
-      photos: photos.length > 0 ? photos : ["https://placehold.co/1200x800?text=No+Photo"],
+      photos: photos.length > 0 ? photos : ["/images/no-photo.svg"],
       year: item.year,
       mileageKm: item.mileageKm,
       price: Number(item.price),
@@ -241,16 +290,20 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
 
             <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Features</h2>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {car.features.map((feature) => (
-                  <div
-                    key={feature}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                  >
-                    {feature}
-                  </div>
-                ))}
-              </div>
+              {car.features.length > 0 ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {car.features.map((feature) => (
+                    <div
+                      key={feature}
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                    >
+                      {feature}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-slate-600">No features listed yet.</p>
+              )}
             </div>
           </section>
 
@@ -330,8 +383,11 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
                 </p>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-600">{car.sellerAbout}</p>
-              <p className="mt-3 text-sm text-slate-700">
-                <span className="font-medium">Phone:</span> {car.sellerPhone}
+              <p className="mt-3 text-base font-semibold text-slate-900">
+                <span className="font-medium">Phone:</span>{" "}
+                <a href={`tel:${car.sellerPhone}`} className="text-blue-700 hover:text-blue-800 hover:underline">
+                  {car.sellerPhone}
+                </a>
               </p>
               <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
                 <iframe
@@ -364,7 +420,7 @@ export default async function CarDetailsPage({ params }: CarDetailsPageProps) {
 
         <section className="mt-8">
           <h2 className="text-2xl font-semibold text-slate-900">Similar Cars</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {similarCars.map((item) => (
               <a
                 key={item.id}

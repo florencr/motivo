@@ -21,6 +21,15 @@ export type PopularMakeFromListings = {
   publishedListingCount: number;
 };
 
+export type TopRatedSeller = {
+  id: string;
+  name: string;
+  companyName: string | null;
+  role: "DEALER" | "PRIVATE_SELLER";
+  dealerRating: number;
+  dealerReviewCount: number;
+};
+
 /** Makes with the most published listings (for homepage “Popular makes”). */
 export async function getPopularMakesFromListings(limit = 8): Promise<PopularMakeFromListings[]> {
   try {
@@ -56,6 +65,39 @@ export async function getPopularMakesFromListings(limit = 8): Promise<PopularMak
         };
       })
       .filter((row): row is PopularMakeFromListings => row != null);
+  } catch {
+    return [];
+  }
+}
+
+export async function getTopRatedSellers(limit = 5): Promise<TopRatedSeller[]> {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: { in: ["DEALER", "PRIVATE_SELLER"] },
+        isActive: true,
+        dealerRating: { not: null, gt: 0 },
+      },
+      orderBy: [{ dealerRating: "desc" }, { dealerReviewCount: "desc" }],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        companyName: true,
+        role: true,
+        dealerRating: true,
+        dealerReviewCount: true,
+      },
+    });
+
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      companyName: u.companyName,
+      role: u.role as "DEALER" | "PRIVATE_SELLER",
+      dealerRating: Number(u.dealerRating ?? 0),
+      dealerReviewCount: u.dealerReviewCount,
+    }));
   } catch {
     return [];
   }

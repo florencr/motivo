@@ -1,18 +1,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import SearchableSelect from "@/app/components/searchable-select";
 
 type VehicleTypeRow = { id: string; name: string; slug: string };
-type Make = { id: string; name: string; vehicleTypeId: string };
+type VehicleSegment = { id: string; name: string; vehicleTypeId: string };
+type Make = { id: string; name: string; vehicleTypeId: string; segmentId?: string | null };
 type Model = { id: string; name: string; make: { name: string }; makeId?: string };
 
 type SellFormProps = {
   vehicleTypes: VehicleTypeRow[];
+  vehicleSegments: VehicleSegment[];
   makes: Make[];
   models: Model[];
+  tagOptions: string[];
+  featureOptions: string[];
 };
 
-export default function SellForm({ vehicleTypes, makes, models }: SellFormProps) {
+export default function SellForm({
+  vehicleTypes,
+  vehicleSegments,
+  makes,
+  models,
+  tagOptions,
+  featureOptions,
+}: SellFormProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,16 +69,30 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
   const [price, setPrice] = useState("");
   const [fuelType, setFuelType] = useState("PETROL");
   const [transmission, setTransmission] = useState("MANUAL");
+  const [ownerCount, setOwnerCount] = useState("1");
+  const [hasAccidentHistory, setHasAccidentHistory] = useState(false);
+  const [damageSeverity, setDamageSeverity] = useState("none");
+  const [hasServiceHistory, setHasServiceHistory] = useState(false);
   const [city, setCity] = useState("");
   const [description, setDescription] = useState("");
+  const [segmentId, setSegmentId] = useState("");
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const filteredSegments = useMemo(() => {
+    if (!vehicleTypeId) return vehicleSegments;
+    return vehicleSegments.filter((segment) => segment.vehicleTypeId === vehicleTypeId);
+  }, [vehicleSegments, vehicleTypeId]);
 
   const filteredMakes = useMemo(() => {
     if (!vehicleTypeId) return makes;
-    return makes.filter((m) => m.vehicleTypeId === vehicleTypeId);
-  }, [makes, vehicleTypeId]);
+    const byType = makes.filter((m) => m.vehicleTypeId === vehicleTypeId);
+    if (!segmentId) return byType;
+    return byType.filter((m) => m.segmentId === segmentId);
+  }, [makes, segmentId, vehicleTypeId]);
 
   const filteredModels = useMemo(() => {
-    if (!makeId) return models;
+    if (!makeId) return [];
     return models.filter((m) => (m as Model & { makeId: string }).makeId === makeId);
   }, [makeId, models]);
 
@@ -108,6 +134,8 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
+          vehicleTypeId,
+          segmentId: segmentId || null,
           makeId,
           modelId,
           year: Number(year),
@@ -115,8 +143,14 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
           price: Number(price),
           fuelType,
           transmission,
+          ownerCount: Number(ownerCount),
+          hasAccidentHistory,
+          damageSeverity: damageSeverity === "none" ? null : damageSeverity,
+          hasServiceHistory,
           city,
           description,
+          selectedFeatures,
+          selectedTags,
           imageUrls,
         }),
       });
@@ -132,8 +166,15 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
       setYear("");
       setMileageKm("");
       setPrice("");
+      setOwnerCount("1");
+      setHasAccidentHistory(false);
+      setDamageSeverity("none");
+      setHasServiceHistory(false);
       setCity("");
       setDescription("");
+      setSegmentId("");
+      setSelectedFeatures([]);
+      setSelectedTags([]);
       releasePreviewUrls(previewUrls);
       setFiles([]);
       setPreviewUrls([]);
@@ -156,11 +197,12 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
         className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         <select
           value={vehicleTypeId}
           onChange={(e) => {
             setVehicleTypeId(e.target.value);
+            setSegmentId("");
             setMakeId("");
             setModelId("");
           }}
@@ -175,34 +217,46 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
           ))}
         </select>
         <select
-          value={makeId}
+          value={segmentId}
           onChange={(e) => {
-            setMakeId(e.target.value);
+            setSegmentId(e.target.value);
+            setMakeId("");
             setModelId("");
           }}
-          required
           className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
         >
-          <option value="">Select make</option>
-          {filteredMakes.map((make) => (
-            <option key={make.id} value={make.id}>
-              {make.name}
+          <option value="">Select category</option>
+          {filteredSegments.map((segment) => (
+            <option key={segment.id} value={segment.id}>
+              {segment.name}
             </option>
           ))}
         </select>
-        <select
+        <SearchableSelect
+          value={makeId}
+          onChange={(next) => {
+            setMakeId(next);
+            setModelId("");
+          }}
+          options={filteredMakes.map((make) => ({ value: make.id, label: make.name }))}
+          placeholder={filteredMakes.length > 0 ? "Select make" : "No makes for this category"}
+          searchPlaceholder="Search make..."
+          emptyText="No makes found"
+        />
+        <SearchableSelect
           value={modelId}
-          onChange={(e) => setModelId(e.target.value)}
-          required
-          className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
-        >
-          <option value="">Select model</option>
-          {filteredModels.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.make.name} - {model.name}
-            </option>
-          ))}
-        </select>
+          onChange={(next) => setModelId(next)}
+          options={filteredModels.map((model) => ({
+            value: model.id,
+            label: `${model.make.name} - ${model.name}`,
+          }))}
+          placeholder={
+            makeId ? (filteredModels.length > 0 ? "Select model" : "No models for this make") : "Select make first"
+          }
+          searchPlaceholder="Search model..."
+          emptyText="No models found"
+          disabled={!makeId}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -233,6 +287,42 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
           required
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
         />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-4">
+        <input
+          type="number"
+          value={ownerCount}
+          onChange={(e) => setOwnerCount(e.target.value)}
+          placeholder="Owners count"
+          min="1"
+          className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
+        />
+        <select
+          value={damageSeverity}
+          onChange={(e) => setDamageSeverity(e.target.value)}
+          className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
+        >
+          <option value="none">No damage</option>
+          <option value="minor">Minor damage</option>
+          <option value="major">Major damage</option>
+        </select>
+        <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={hasAccidentHistory}
+            onChange={(e) => setHasAccidentHistory(e.target.checked)}
+          />
+          Accident history
+        </label>
+        <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={hasServiceHistory}
+            onChange={(e) => setHasServiceHistory(e.target.checked)}
+          />
+          Full service history
+        </label>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -269,6 +359,56 @@ export default function SellForm({ vehicleTypes, makes, models }: SellFormProps)
         required
         className="min-h-32 w-full rounded-lg border border-slate-300 p-3 text-sm"
       />
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-slate-700">Listing tags</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {tagOptions.map((tag) => {
+            const checked = selectedTags.includes(tag);
+            return (
+              <label key={tag} className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedTags((prev) => [...prev, tag]);
+                      return;
+                    }
+                    setSelectedTags((prev) => prev.filter((item) => item !== tag));
+                  }}
+                />
+                <span>{tag}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-slate-700">Features</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {featureOptions.map((feature) => {
+            const checked = selectedFeatures.includes(feature);
+            return (
+              <label key={feature} className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedFeatures((prev) => [...prev, feature]);
+                      return;
+                    }
+                    setSelectedFeatures((prev) => prev.filter((item) => item !== feature));
+                  }}
+                />
+                <span>{feature}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-slate-700">Photos</label>

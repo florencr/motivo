@@ -65,6 +65,7 @@ model User {
   sellerType      SellerType?
   companyName     String?
   companyLogoUrl  String?
+  profileDescription String?
   taxId           String?
   dealerLicenseNo String?
   address           String?
@@ -74,11 +75,52 @@ model User {
   isActive          Boolean    @default(true)
   listings          Listing[]
   sessions        UserSession[]
+  reviewsReceived SellerReview[] @relation("SellerReviewsReceived")
+  reviewsGiven    SellerReview[] @relation("SellerReviewsGiven")
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
   @@index([role])
   @@index([sellerType])
+}
+
+model ListingTagOption {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model ListingFeatureOption {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+model SellerReview {
+  id                     String   @id @default(cuid())
+  reviewerId             String
+  reviewedUserId         String
+  responsivenessRating   Int
+  realityMatchRating     Int
+  overallExperienceRating Int
+  averageRating          Float
+  comment                String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  reviewer     User @relation("SellerReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewedUser User @relation("SellerReviewsReceived", fields: [reviewedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewerId, reviewedUserId])
+  @@index([reviewedUserId])
 }
 
 model UserSession {
@@ -103,6 +145,7 @@ model VehicleType {
   id        String            @id @default(cuid())
   name      String
   slug      String            @unique
+  icon      String?
   sortOrder Int               @default(0)
   segments  VehicleSegment[]
   makes     Make[]
@@ -118,6 +161,7 @@ model VehicleSegment {
   vehicleType   VehicleType @relation(fields: [vehicleTypeId], references: [id], onDelete: Cascade)
   name          String
   slug          String
+  icon          String?
   sortOrder     Int         @default(0)
   makes         Make[]
   createdAt     DateTime    @default(now())
@@ -194,6 +238,10 @@ model Listing {
   transmission Transmission
   engineCapacity Int?
   powerHp      Int?
+  ownerCount   Int          @default(1)
+  hasAccidentHistory Boolean @default(false)
+  damageSeverity String?
+  hasServiceHistory Boolean @default(false)
   driveTrain   DriveTrain?
   color        String?
   city         String?

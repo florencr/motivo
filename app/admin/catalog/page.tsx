@@ -1,9 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { VEHICLE_TYPE_ICON_OPTIONS, VehicleTypeIcon } from "@/app/components/vehicle-type-icon";
+import { VEHICLE_SEGMENT_ICON_OPTIONS, VehicleSegmentIcon } from "@/app/components/vehicle-segment-icon";
 
-type VehicleType = { id: string; name: string; slug: string; sortOrder: number };
-type VehicleSegment = { id: string; name: string; slug: string; sortOrder: number; vehicleTypeId: string };
+type VehicleType = { id: string; name: string; slug: string; icon: string | null; sortOrder: number };
+type VehicleSegment = {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  sortOrder: number;
+  vehicleTypeId: string;
+};
 type Make = {
   id: string;
   name: string;
@@ -14,6 +23,7 @@ type Make = {
   segment?: { name: string } | null;
 };
 type Model = { id: string; name: string; makeId: string; make: { name: string } };
+type CatalogSection = "types" | "segments" | "makes" | "models";
 
 export default function AdminCatalogPage() {
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
@@ -23,9 +33,11 @@ export default function AdminCatalogPage() {
   const [error, setError] = useState("");
 
   const [typeName, setTypeName] = useState("");
+  const [typeIcon, setTypeIcon] = useState("car");
   const [typeSort, setTypeSort] = useState("0");
 
   const [segmentName, setSegmentName] = useState("");
+  const [segmentIcon, setSegmentIcon] = useState("sedan");
   const [segmentTypeId, setSegmentTypeId] = useState("");
   const [segmentSort, setSegmentSort] = useState("0");
 
@@ -34,7 +46,9 @@ export default function AdminCatalogPage() {
   const [makeSegmentId, setMakeSegmentId] = useState("");
 
   const [modelName, setModelName] = useState("");
+  const [modelTypeId, setModelTypeId] = useState("");
   const [modelMakeId, setModelMakeId] = useState("");
+  const [activeSection, setActiveSection] = useState<CatalogSection>("types");
 
   async function loadCatalog() {
     const res = await fetch("/api/admin/catalog");
@@ -48,6 +62,9 @@ export default function AdminCatalogPage() {
     }
     if (!makeTypeId && (data.vehicleTypes?.length ?? 0) > 0) {
       setMakeTypeId(data.vehicleTypes[0].id);
+    }
+    if (!modelTypeId && (data.vehicleTypes?.length ?? 0) > 0) {
+      setModelTypeId(data.vehicleTypes[0].id);
     }
   }
 
@@ -102,18 +119,60 @@ export default function AdminCatalogPage() {
   }
 
   const segmentsForSelectedType = vehicleSegments.filter((s) => s.vehicleTypeId === makeTypeId);
+  const segmentsForEditorType = vehicleSegments.filter((s) => s.vehicleTypeId === segmentTypeId);
+  const makesForSelectedModelType = makes.filter((mk) => mk.vehicleTypeId === modelTypeId);
+  const modelsForSelectedMake = modelMakeId ? models.filter((mod) => mod.makeId === modelMakeId) : models;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <h1 className="text-3xl font-bold text-slate-900">Admin Catalog</h1>
-        <p className="text-sm text-slate-600">
-          Top level: vehicle types (Cars, Vans, …). Second level: segments per type (Sedan, SUV, …). Then makes and
-          models. Edit inline and save, or delete.
-        </p>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+    <main className="space-y-6">
+      <h1 className="text-3xl font-bold text-slate-900">Admin Catalog</h1>
+      <p className="text-sm text-slate-600">
+        Top level: vehicle types (Cars, Vans, ...). Second level: segments per type (Sedan, SUV, ...). Then makes and
+        models. Edit inline and save, or delete.
+      </p>
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setActiveSection("types")}
+          className={`rounded-lg px-3 py-2 text-sm font-medium ${
+            activeSection === "types" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
+          }`}
+        >
+          Vehicle Types
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection("segments")}
+          className={`rounded-lg px-3 py-2 text-sm font-medium ${
+            activeSection === "segments" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
+          }`}
+        >
+          Segments
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection("makes")}
+          className={`rounded-lg px-3 py-2 text-sm font-medium ${
+            activeSection === "makes" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
+          }`}
+        >
+          Makes
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSection("models")}
+          className={`rounded-lg px-3 py-2 text-sm font-medium ${
+            activeSection === "models" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
+          }`}
+        >
+          Models
+        </button>
+      </div>
+
+      {activeSection === "types" && (
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Vehicle types</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             <input
@@ -122,6 +181,17 @@ export default function AdminCatalogPage() {
               placeholder="Name (e.g. Cars)"
               className="h-10 min-w-[160px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
+            <select
+              value={typeIcon}
+              onChange={(e) => setTypeIcon(e.target.value)}
+              className="h-10 min-w-[180px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+            >
+              {VEHICLE_TYPE_ICON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <input
               value={typeSort}
               onChange={(e) => setTypeSort(e.target.value)}
@@ -136,10 +206,12 @@ export default function AdminCatalogPage() {
                 const ok = await postJson({
                   type: "vehicleType",
                   name: typeName,
+                  icon: typeIcon,
                   sortOrder: Number(typeSort) || 0,
                 });
                 if (ok) {
                   setTypeName("");
+                  setTypeIcon("car");
                   setTypeSort("0");
                 }
               }}
@@ -151,6 +223,15 @@ export default function AdminCatalogPage() {
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
             {vehicleTypes.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-2 py-2">
+                <input
+                  defaultValue={t.icon ?? "car"}
+                  id={`vt-icon-${t.id}`}
+                  list="vehicle-type-icon-options"
+                  className="h-9 w-40 rounded border border-slate-200 px-2"
+                />
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-slate-700">
+                  <VehicleTypeIcon icon={t.icon} className="h-5 w-5" />
+                </span>
                 <input
                   defaultValue={t.name}
                   id={`vt-name-${t.id}`}
@@ -166,11 +247,13 @@ export default function AdminCatalogPage() {
                   type="button"
                   className="h-9 rounded-lg bg-slate-800 px-3 text-xs font-semibold text-white"
                   onClick={() => {
+                    const iconEl = document.getElementById(`vt-icon-${t.id}`) as HTMLInputElement | null;
                     const nameEl = document.getElementById(`vt-name-${t.id}`) as HTMLInputElement | null;
                     const sortEl = document.getElementById(`vt-sort-${t.id}`) as HTMLInputElement | null;
                     void patchJson({
                       entity: "vehicleType",
                       id: t.id,
+                      icon: iconEl?.value ?? t.icon ?? "",
                       name: nameEl?.value ?? t.name,
                       sortOrder: Number(sortEl?.value ?? t.sortOrder),
                     });
@@ -188,9 +271,11 @@ export default function AdminCatalogPage() {
               </li>
             ))}
           </ul>
-        </section>
+      </section>
+      )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {activeSection === "segments" && (
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Segments (body / subcategory)</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             <select
@@ -210,6 +295,17 @@ export default function AdminCatalogPage() {
               placeholder="Segment name (e.g. SUV)"
               className="h-10 min-w-[160px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
+            <select
+              value={segmentIcon}
+              onChange={(e) => setSegmentIcon(e.target.value)}
+              className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+            >
+              {VEHICLE_SEGMENT_ICON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
             <input
               value={segmentSort}
               onChange={(e) => setSegmentSort(e.target.value)}
@@ -223,11 +319,13 @@ export default function AdminCatalogPage() {
                 const ok = await postJson({
                   type: "segment",
                   name: segmentName,
+                  icon: segmentIcon,
                   vehicleTypeId: segmentTypeId,
                   sortOrder: Number(segmentSort) || 0,
                 });
                 if (ok) {
                   setSegmentName("");
+                  setSegmentIcon("sedan");
                   setSegmentSort("0");
                 }
               }}
@@ -237,11 +335,20 @@ export default function AdminCatalogPage() {
             </button>
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
-            {vehicleSegments.map((s) => {
+            {segmentsForEditorType.map((s) => {
               const typeNameLabel = vehicleTypes.find((t) => t.id === s.vehicleTypeId)?.name ?? s.vehicleTypeId;
               return (
                 <li key={s.id} className="flex flex-wrap items-center gap-2 py-2">
                   <span className="w-28 shrink-0 text-xs text-slate-500">{typeNameLabel}</span>
+                  <input
+                    defaultValue={s.icon ?? "sedan"}
+                    id={`seg-icon-${s.id}`}
+                    list="vehicle-segment-icon-options"
+                    className="h-9 w-28 rounded border border-slate-200 px-2"
+                  />
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-slate-700">
+                    <VehicleSegmentIcon icon={s.icon} className="h-5 w-5" />
+                  </span>
                   <input
                     defaultValue={s.name}
                     id={`seg-name-${s.id}`}
@@ -268,12 +375,14 @@ export default function AdminCatalogPage() {
                     type="button"
                     className="h-9 rounded-lg bg-slate-800 px-3 text-xs font-semibold text-white"
                     onClick={() => {
+                      const iconEl = document.getElementById(`seg-icon-${s.id}`) as HTMLInputElement | null;
                       const nameEl = document.getElementById(`seg-name-${s.id}`) as HTMLInputElement | null;
                       const typeEl = document.getElementById(`seg-type-${s.id}`) as HTMLSelectElement | null;
                       const sortEl = document.getElementById(`seg-sort-${s.id}`) as HTMLInputElement | null;
                       void patchJson({
                         entity: "segment",
                         id: s.id,
+                        icon: iconEl?.value ?? s.icon ?? "",
                         name: nameEl?.value ?? s.name,
                         vehicleTypeId: typeEl?.value ?? s.vehicleTypeId,
                         sortOrder: Number(sortEl?.value ?? s.sortOrder),
@@ -293,9 +402,11 @@ export default function AdminCatalogPage() {
               );
             })}
           </ul>
-        </section>
+      </section>
+      )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {activeSection === "makes" && (
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Makes</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <select
@@ -400,18 +511,34 @@ export default function AdminCatalogPage() {
               </li>
             ))}
           </ul>
-        </section>
+      </section>
+      )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {activeSection === "models" && (
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Models</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            <select
+              value={modelTypeId}
+              onChange={(e) => {
+                setModelTypeId(e.target.value);
+                setModelMakeId("");
+              }}
+              className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+            >
+              {vehicleTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
             <select
               value={modelMakeId}
               onChange={(e) => setModelMakeId(e.target.value)}
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             >
               <option value="">Select make</option>
-              {makes.map((mk) => (
+              {makesForSelectedModelType.map((mk) => (
                 <option key={mk.id} value={mk.id}>
                   {mk.vehicleType?.name ? `${mk.vehicleType.name} · ` : ""}
                   {mk.name}
@@ -441,7 +568,7 @@ export default function AdminCatalogPage() {
             </button>
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
-            {models.map((mod) => (
+            {modelsForSelectedMake.map((mod) => (
               <li key={mod.id} className="flex flex-wrap items-center gap-2 py-2">
                 <input
                   defaultValue={mod.name}
@@ -449,7 +576,7 @@ export default function AdminCatalogPage() {
                   className="h-9 flex-1 min-w-[100px] rounded border border-slate-200 px-2"
                 />
                 <select defaultValue={mod.makeId} id={`md-make-${mod.id}`} className="h-9 rounded border border-slate-200 px-2 text-xs">
-                  {makes.map((mk) => (
+                  {makesForSelectedModelType.map((mk) => (
                     <option key={mk.id} value={mk.id}>
                       {mk.name}
                     </option>
@@ -481,16 +608,26 @@ export default function AdminCatalogPage() {
               </li>
             ))}
           </ul>
-        </section>
+      </section>
+      )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Summary</h2>
           <p className="mt-2 text-sm text-slate-700">
             Types: {vehicleTypes.length} · Segments: {vehicleSegments.length} · Makes: {makes.length} · Models:{" "}
             {models.length}
           </p>
-        </section>
-      </div>
+      </section>
+      <datalist id="vehicle-type-icon-options">
+        {VEHICLE_TYPE_ICON_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value} />
+        ))}
+      </datalist>
+      <datalist id="vehicle-segment-icon-options">
+        {VEHICLE_SEGMENT_ICON_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value} />
+        ))}
+      </datalist>
     </main>
   );
 }
