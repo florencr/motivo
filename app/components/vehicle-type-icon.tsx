@@ -11,8 +11,30 @@ export const VEHICLE_TYPE_ICON_OPTIONS = [
 
 export type VehicleTypeIconKey = (typeof VEHICLE_TYPE_ICON_OPTIONS)[number]["value"];
 
-export function VehicleTypeIcon({ icon, className = "h-4 w-4" }: { icon?: string | null; className?: string }) {
-  const key = (icon || "car").toLowerCase();
+/** When `icon` is null, pick a sensible Lucide key from the vehicle type slug (e.g. boats → boat). */
+export function inferVehicleTypeIconKey(typeSlug?: string | null): VehicleTypeIconKey {
+  const s = (typeSlug ?? "").toLowerCase().trim();
+  if (!s) return "car";
+  if (s.includes("motor") || s === "bikes" || s === "bike") return "motorcycle";
+  if (s.includes("truck")) return "truck";
+  if (s.includes("boat") || s === "marine" || s === "watercraft") return "boat";
+  if (s.includes("van")) return "van";
+  if (s.includes("bus")) return "bus";
+  return "car";
+}
+
+export function VehicleTypeIcon({
+  icon,
+  typeSlug,
+  className = "h-4 w-4",
+}: {
+  icon?: string | null;
+  /** Vehicle type slug from DB; used when `icon` is unset */
+  typeSlug?: string | null;
+  className?: string;
+}) {
+  const trimmed = icon?.trim();
+  const key = (trimmed || inferVehicleTypeIconKey(typeSlug)).toLowerCase();
 
   const strokeWidth = 1.8;
   if (key === "motorcycle") {

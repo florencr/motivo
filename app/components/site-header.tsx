@@ -38,7 +38,7 @@ export default function SiteHeader() {
             href="/sell"
             className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
           >
-            Add Car +
+            + Add Vehicle
           </a>
           <a
             href="/login"

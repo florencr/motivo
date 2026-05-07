@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,7 +14,13 @@
     "db:studio": "prisma studio",
     "db:reset-user-password": "node scripts/reset-user-password.mjs",
     "db:seed-catalog": "node scripts/seed-catalog.mjs",
-    "db:seed-samples": "node scripts/seed-sample-listings.mjs"
+    "db:seed-samples": "node scripts/seed-sample-listings.mjs",
+    "db:export-local-data": "node scripts/export-local-db-data.mjs",
+    "db:import-live-data": "node scripts/import-live-data.mjs",
+    "db:truncate-live-data": "node scripts/truncate-app-data.mjs",
+    "db:list-users": "node scripts/list-db-users.mjs",
+    "db:import-listings-bulk": "node scripts/import-listings-bulk.mjs",
+    "scrape:to-ndjson": "node scripts/scrape-to-ndjson.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -31,6 +37,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cheerio": "^1.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",

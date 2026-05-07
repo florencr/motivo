@@ -51,6 +51,50 @@ function toSlug(value) {
     .replace(/^-+|-+$/g, "");
 }
 
+function vehicleTypeIconKey(typeName) {
+  const slug = toSlug(typeName);
+  if (slug === "motorcycles") return "motorcycle";
+  if (slug === "trucks") return "truck";
+  if (slug === "boats") return "boat";
+  if (slug === "vans") return "van";
+  if (slug === "buses" || slug === "bus") return "bus";
+  return "car";
+}
+
+function segmentIconKey(vehicleTypeName, segmentName) {
+  const vt = toSlug(vehicleTypeName);
+  const seg = toSlug(segmentName);
+  if (vt === "boats") {
+    if (seg === "motorboat") return "motoboat";
+    if (seg === "yacht") return "yacht";
+    if (seg === "sailing") return "sailing";
+    if (seg === "jet-ski") return "motoboat";
+    if (seg === "rib") return "boat";
+    return "boat";
+  }
+  if (vt === "trucks") {
+    return "pickup";
+  }
+  if (vt === "motorcycles") {
+    if (seg === "scooter") return "hatchback";
+    if (seg === "naked" || seg === "sport") return "sport";
+    if (seg === "touring") return "adventure";
+    if (seg === "adventure") return "adventure";
+    if (seg === "cruiser") return "coupe";
+    return "sedan";
+  }
+  const carMap = {
+    sedan: "sedan",
+    hatchback: "hatchback",
+    suv: "suv",
+    coupe: "coupe",
+    convertible: "convertible",
+    wagon: "wagon",
+    van: "van",
+  };
+  return carMap[seg] ?? "sedan";
+}
+
 const CATALOG = [
   {
     type: "Cars",
@@ -103,50 +147,78 @@ const CATALOG = [
   },
 ];
 
-async function upsertVehicleType(client, name, sortOrder) {
+const MAKE_LOGOS = {
+  "Volkswagen": "https://logo.clearbit.com/volkswagen.com",
+  "Mercedes-Benz": "https://logo.clearbit.com/mercedes-benz.com",
+  "BMW": "https://logo.clearbit.com/bmw.com",
+  "Audi": "https://logo.clearbit.com/audi.com",
+  "Toyota": "https://logo.clearbit.com/toyota.com",
+  "Ford": "https://logo.clearbit.com/ford.com",
+  "Hyundai": "https://logo.clearbit.com/hyundai.com",
+  "Kia": "https://logo.clearbit.com/kia.com",
+  "Skoda": "https://logo.clearbit.com/skoda-auto.com",
+  "Renault": "https://logo.clearbit.com/renault.com",
+  "Yamaha": "https://logo.clearbit.com/yamaha.com",
+  "Honda": "https://logo.clearbit.com/honda.com",
+  "Kawasaki": "https://logo.clearbit.com/kawasaki.com",
+  "Suzuki": "https://logo.clearbit.com/suzuki.com",
+  "Ducati": "https://logo.clearbit.com/ducati.com",
+  "MAN": "https://logo.clearbit.com/man.eu",
+  "Volvo Trucks": "https://logo.clearbit.com/volvotrucks.com",
+  "Scania": "https://logo.clearbit.com/scania.com",
+  "Iveco": "https://logo.clearbit.com/iveco.com",
+  "Ford Trucks": "https://logo.clearbit.com/fordtrucks.com.tr",
+  "Yamaha Marine": "https://logo.clearbit.com/yamaha-motor.eu",
+  "Bayliner": "https://logo.clearbit.com/bayliner.com",
+  "Sea Ray": "https://logo.clearbit.com/searay.com",
+  "Beneteau": "https://logo.clearbit.com/beneteau.com",
+  "Jeanneau": "https://logo.clearbit.com/jeanneau.com",
+};
+
+async function upsertVehicleType(client, name, sortOrder, icon) {
   const slug = toSlug(name);
   const id = `seed_vtype_${slug}`;
   const res = await client.query(
     `
-    INSERT INTO "VehicleType" ("id", "name", "slug", "sortOrder", "updatedAt")
-    VALUES ($1, $2, $3, $4, now())
+    INSERT INTO "VehicleType" ("id", "name", "slug", "icon", "sortOrder", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, now())
     ON CONFLICT ("slug")
-    DO UPDATE SET "name" = EXCLUDED."name", "sortOrder" = EXCLUDED."sortOrder", "updatedAt" = now()
+    DO UPDATE SET "name" = EXCLUDED."name", "icon" = EXCLUDED."icon", "sortOrder" = EXCLUDED."sortOrder", "updatedAt" = now()
     RETURNING "id"
   `,
-    [id, name, slug, sortOrder],
+    [id, name, slug, icon ?? null, sortOrder],
   );
   return res.rows[0].id;
 }
 
-async function upsertSegment(client, vehicleTypeId, name, sortOrder) {
+async function upsertSegment(client, vehicleTypeId, name, sortOrder, icon) {
   const slug = toSlug(name);
   const id = `seed_vseg_${vehicleTypeId}_${slug}`.slice(0, 190);
   const res = await client.query(
     `
-    INSERT INTO "VehicleSegment" ("id", "vehicleTypeId", "name", "slug", "sortOrder", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, now())
+    INSERT INTO "VehicleSegment" ("id", "vehicleTypeId", "name", "slug", "icon", "iconUrl", "sortOrder", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, NULL, $6, now())
     ON CONFLICT ("vehicleTypeId", "slug")
-    DO UPDATE SET "name" = EXCLUDED."name", "sortOrder" = EXCLUDED."sortOrder", "updatedAt" = now()
+    DO UPDATE SET "name" = EXCLUDED."name", "icon" = EXCLUDED."icon", "sortOrder" = EXCLUDED."sortOrder", "updatedAt" = now()
     RETURNING "id"
   `,
-    [id, vehicleTypeId, name, slug, sortOrder],
+    [id, vehicleTypeId, name, slug, icon ?? null, sortOrder],
   );
   return res.rows[0].id;
 }
 
-async function upsertMake(client, vehicleTypeId, segmentId, name) {
+async function upsertMake(client, vehicleTypeId, segmentId, name, logoUrl) {
   const slug = toSlug(name);
   const id = `seed_make_${vehicleTypeId}_${slug}`.slice(0, 190);
   const res = await client.query(
     `
-    INSERT INTO "Make" ("id", "name", "slug", "vehicleTypeId", "segmentId", "updatedAt")
-    VALUES ($1, $2, $3, $4, $5, now())
+    INSERT INTO "Make" ("id", "name", "slug", "logoUrl", "vehicleTypeId", "segmentId", "updatedAt")
+    VALUES ($1, $2, $3, $4, $5, $6, now())
     ON CONFLICT ("vehicleTypeId", "slug")
-    DO UPDATE SET "name" = EXCLUDED."name", "segmentId" = EXCLUDED."segmentId", "updatedAt" = now()
+    DO UPDATE SET "name" = EXCLUDED."name", "logoUrl" = EXCLUDED."logoUrl", "segmentId" = EXCLUDED."segmentId", "updatedAt" = now()
     RETURNING "id"
   `,
-    [id, name, slug, vehicleTypeId, segmentId],
+    [id, name, slug, logoUrl ?? null, vehicleTypeId, segmentId],
   );
   return res.rows[0].id;
 }
@@ -180,18 +252,30 @@ async function main() {
 
     for (let typeIndex = 0; typeIndex < CATALOG.length; typeIndex += 1) {
       const item = CATALOG[typeIndex];
-      const vehicleTypeId = await upsertVehicleType(client, item.type, typeIndex + 1);
+      const vehicleTypeId = await upsertVehicleType(
+        client,
+        item.type,
+        typeIndex + 1,
+        vehicleTypeIconKey(item.type),
+      );
       const segmentIdByName = new Map();
 
       for (let segIndex = 0; segIndex < item.segments.length; segIndex += 1) {
         const segmentName = item.segments[segIndex];
-        const segmentId = await upsertSegment(client, vehicleTypeId, segmentName, segIndex + 1);
+        const segmentId = await upsertSegment(
+          client,
+          vehicleTypeId,
+          segmentName,
+          segIndex + 1,
+          segmentIconKey(item.type, segmentName),
+        );
         segmentIdByName.set(segmentName, segmentId);
       }
 
       for (const make of item.makes) {
         const segmentId = segmentIdByName.get(make.segment) ?? null;
-        const makeId = await upsertMake(client, vehicleTypeId, segmentId, make.name);
+        const logoUrl = MAKE_LOGOS[make.name] ?? null;
+        const makeId = await upsertMake(client, vehicleTypeId, segmentId, make.name, logoUrl);
         for (const modelName of make.models) {
           await upsertModel(client, makeId, modelName);
         }

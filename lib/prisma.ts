@@ -5,7 +5,15 @@ import { PrismaPg } from "@prisma/adapter-pg";
  * Bump when connection wiring changes. Dev (Turbopack) reuses a global client;
  * mismatch recreates the client after edits.
  */
-const PRISMA_CLIENT_CACHE_VERSION = 6;
+const PRISMA_CLIENT_CACHE_VERSION = 7;
+
+/** Quiets pg v8 deprecation warning when URL uses sslmode=require (e.g. Neon). */
+function withPgDriverSslCompat(connectionString: string): string {
+  const u = connectionString.trim();
+  if (!u || /uselibpqcompat\s*=\s*true/i.test(u)) return u;
+  if (!/sslmode=(require|prefer|verify-ca)\b/i.test(u)) return u;
+  return u.includes("?") ? `${u}&uselibpqcompat=true` : `${u}?uselibpqcompat=true`;
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -31,7 +39,9 @@ function createPrismaClient(): PrismaClient {
       "DATABASE_URL is missing or empty. Add postgresql://… to .env locally, set DATABASE_URL in Vercel → Settings → Environment Variables (Production), or use PRISMA_ACCELERATE_URL with a prisma:// URL."
     );
   }
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+  return new PrismaClient({
+    adapter: new PrismaPg({ connectionString: withPgDriverSslCompat(databaseUrl) }),
+  });
 }
 
 function getPrisma(): PrismaClient {

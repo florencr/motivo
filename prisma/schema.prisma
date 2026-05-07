@@ -54,6 +54,29 @@ enum FooterSection {
   APP
 }
 
+enum ImportSourceType {
+  WEBSITE
+  FACEBOOK_MARKETPLACE
+  FACEBOOK_POST
+  INSTAGRAM_POST
+  MANUAL
+}
+
+enum ImportRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+enum ImportRecordStatus {
+  CREATED
+  UPDATED
+  SKIPPED
+  FAILED
+}
+
 model User {
   id              String     @id @default(cuid())
   name            String
@@ -162,6 +185,8 @@ model VehicleSegment {
   name          String
   slug          String
   icon          String?
+  /** Optional image URL (https) shown instead of the built-in icon when set. */
+  iconUrl       String?
   sortOrder     Int         @default(0)
   makes         Make[]
   createdAt     DateTime    @default(now())
@@ -175,6 +200,7 @@ model Make {
   id            String          @id @default(cuid())
   name          String
   slug          String
+  logoUrl       String?
   vehicleTypeId String
   vehicleType   VehicleType     @relation(fields: [vehicleTypeId], references: [id], onDelete: Restrict)
   segmentId     String?
@@ -280,4 +306,77 @@ model FooterPage {
 
   @@index([section])
   @@index([isPublished])
+}
+
+model ImportSource {
+  id              String           @id @default(cuid())
+  name            String
+  type            ImportSourceType @default(WEBSITE)
+  /** Connector key, e.g. "generic", "merrjep-vehicles". Maps to a connector module. */
+  connectorKey    String           @default("generic")
+  /** Origin URL like https://example.com (used to absolutize relative links). */
+  baseUrl         String?
+  /** JSON array of starting list URLs to crawl. */
+  listUrls        Json
+  /** Connector-specific config (selectors, headers, etc.). */
+  config          Json?
+  /** Email of the User to attach as the seller for imported listings. */
+  defaultSellerEmail String
+  defaultSellerType  SellerType    @default(DEALER)
+  defaultCurrency    Currency      @default(EUR)
+  /** Auto-publish listings as soon as they are valid. */
+  autoPublish     Boolean          @default(true)
+  requestDelayMs  Int              @default(1500)
+  maxPerRun       Int              @default(100)
+  isActive        Boolean          @default(true)
+  lastRunAt       DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  runs            ImportRun[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model ImportRun {
+  id            String            @id @default(cuid())
+  sourceId      String
+  source        ImportSource      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  status        ImportRunStatus   @default(PENDING)
+  startedAt     DateTime          @default(now())
+  finishedAt    DateTime?
+  createdCount  Int               @default(0)
+  updatedCount  Int               @default(0)
+  skippedCount  Int               @default(0)
+  failedCount   Int               @default(0)
+  /** Optional human-readable error message. */
+  errorMessage  String?
+  /** Free-form log entries for diagnostics. */
+  logs          Json?
+  records       ImportRecord[]
+
+  @@index([sourceId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model ImportRecord {
+  id           String             @id @default(cuid())
+  runId        String
+  run          ImportRun          @relation(fields: [runId], references: [id], onDelete: Cascade)
+  sourceUrl    String?
+  externalId   String?
+  status       ImportRecordStatus
+  /** Listing slug if created/updated. */
+  listingSlug  String?
+  /** Why it was skipped or failed. */
+  message      String?
+  /** Snapshot of normalized record (for audit). */
+  rawData      Json?
+  createdAt    DateTime           @default(now())
+
+  @@index([runId])
+  @@index([status])
+  @@index([listingSlug])
 }

@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { VEHICLE_TYPE_ICON_OPTIONS, VehicleTypeIcon } from "@/app/components/vehicle-type-icon";
-import { VEHICLE_SEGMENT_ICON_OPTIONS, VehicleSegmentIcon } from "@/app/components/vehicle-segment-icon";
+import {
+  VEHICLE_TYPE_ICON_OPTIONS,
+  VehicleTypeIcon,
+  inferVehicleTypeIconKey,
+} from "@/app/components/vehicle-type-icon";
+import {
+  VEHICLE_SEGMENT_ICON_OPTIONS,
+  VehicleSegmentIcon,
+  inferVehicleSegmentIconKey,
+} from "@/app/components/vehicle-segment-icon";
 
 type VehicleType = { id: string; name: string; slug: string; icon: string | null; sortOrder: number };
 type VehicleSegment = {
@@ -10,6 +18,7 @@ type VehicleSegment = {
   name: string;
   slug: string;
   icon: string | null;
+  iconUrl?: string | null;
   sortOrder: number;
   vehicleTypeId: string;
 };
@@ -17,6 +26,7 @@ type Make = {
   id: string;
   name: string;
   slug: string;
+  logoUrl: string | null;
   vehicleTypeId: string;
   segmentId: string | null;
   vehicleType?: { name: string };
@@ -38,10 +48,12 @@ export default function AdminCatalogPage() {
 
   const [segmentName, setSegmentName] = useState("");
   const [segmentIcon, setSegmentIcon] = useState("sedan");
+  const [segmentIconUrl, setSegmentIconUrl] = useState("");
   const [segmentTypeId, setSegmentTypeId] = useState("");
   const [segmentSort, setSegmentSort] = useState("0");
 
   const [makeName, setMakeName] = useState("");
+  const [makeLogoUrl, setMakeLogoUrl] = useState("");
   const [makeTypeId, setMakeTypeId] = useState("");
   const [makeSegmentId, setMakeSegmentId] = useState("");
 
@@ -224,13 +236,13 @@ export default function AdminCatalogPage() {
             {vehicleTypes.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-2 py-2">
                 <input
-                  defaultValue={t.icon ?? "car"}
+                  defaultValue={t.icon ?? inferVehicleTypeIconKey(t.slug)}
                   id={`vt-icon-${t.id}`}
                   list="vehicle-type-icon-options"
                   className="h-9 w-40 rounded border border-slate-200 px-2"
                 />
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-slate-700">
-                  <VehicleTypeIcon icon={t.icon} className="h-5 w-5" />
+                  <VehicleTypeIcon icon={t.icon} typeSlug={t.slug} className="h-5 w-5" />
                 </span>
                 <input
                   defaultValue={t.name}
@@ -307,6 +319,13 @@ export default function AdminCatalogPage() {
               ))}
             </select>
             <input
+              value={segmentIconUrl}
+              onChange={(e) => setSegmentIconUrl(e.target.value)}
+              type="url"
+              placeholder="Custom icon image URL (optional)"
+              className="h-10 min-w-[200px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+            />
+            <input
               value={segmentSort}
               onChange={(e) => setSegmentSort(e.target.value)}
               type="number"
@@ -320,12 +339,14 @@ export default function AdminCatalogPage() {
                   type: "segment",
                   name: segmentName,
                   icon: segmentIcon,
+                  iconUrl: segmentIconUrl.trim() || null,
                   vehicleTypeId: segmentTypeId,
                   sortOrder: Number(segmentSort) || 0,
                 });
                 if (ok) {
                   setSegmentName("");
                   setSegmentIcon("sedan");
+                  setSegmentIconUrl("");
                   setSegmentSort("0");
                 }
               }}
@@ -336,19 +357,34 @@ export default function AdminCatalogPage() {
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
             {segmentsForEditorType.map((s) => {
-              const typeNameLabel = vehicleTypes.find((t) => t.id === s.vehicleTypeId)?.name ?? s.vehicleTypeId;
+              const parentType = vehicleTypes.find((t) => t.id === s.vehicleTypeId);
+              const typeNameLabel = parentType?.name ?? s.vehicleTypeId;
+              const segmentParentTypeSlug = parentType?.slug ?? null;
               return (
                 <li key={s.id} className="flex flex-wrap items-center gap-2 py-2">
                   <span className="w-28 shrink-0 text-xs text-slate-500">{typeNameLabel}</span>
                   <input
-                    defaultValue={s.icon ?? "sedan"}
+                    defaultValue={s.icon ?? inferVehicleSegmentIconKey(s.slug, segmentParentTypeSlug)}
                     id={`seg-icon-${s.id}`}
                     list="vehicle-segment-icon-options"
                     className="h-9 w-28 rounded border border-slate-200 px-2"
                   />
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-slate-700">
-                    <VehicleSegmentIcon icon={s.icon} className="h-5 w-5" />
+                    <VehicleSegmentIcon
+                      icon={s.icon}
+                      iconUrl={s.iconUrl}
+                      segmentSlug={s.slug}
+                      vehicleTypeSlug={segmentParentTypeSlug}
+                      className="h-5 w-5"
+                    />
                   </span>
+                  <input
+                    type="url"
+                    defaultValue={s.iconUrl ?? ""}
+                    id={`seg-iconUrl-${s.id}`}
+                    placeholder="Custom image URL"
+                    className="h-9 min-w-[160px] max-w-[220px] flex-1 rounded border border-slate-200 px-2 text-xs"
+                  />
                   <input
                     defaultValue={s.name}
                     id={`seg-name-${s.id}`}
@@ -376,6 +412,7 @@ export default function AdminCatalogPage() {
                     className="h-9 rounded-lg bg-slate-800 px-3 text-xs font-semibold text-white"
                     onClick={() => {
                       const iconEl = document.getElementById(`seg-icon-${s.id}`) as HTMLInputElement | null;
+                      const iconUrlEl = document.getElementById(`seg-iconUrl-${s.id}`) as HTMLInputElement | null;
                       const nameEl = document.getElementById(`seg-name-${s.id}`) as HTMLInputElement | null;
                       const typeEl = document.getElementById(`seg-type-${s.id}`) as HTMLSelectElement | null;
                       const sortEl = document.getElementById(`seg-sort-${s.id}`) as HTMLInputElement | null;
@@ -383,6 +420,7 @@ export default function AdminCatalogPage() {
                         entity: "segment",
                         id: s.id,
                         icon: iconEl?.value ?? s.icon ?? "",
+                        iconUrl: iconUrlEl?.value ?? "",
                         name: nameEl?.value ?? s.name,
                         vehicleTypeId: typeEl?.value ?? s.vehicleTypeId,
                         sortOrder: Number(sortEl?.value ?? s.sortOrder),
@@ -408,7 +446,7 @@ export default function AdminCatalogPage() {
       {activeSection === "makes" && (
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Makes</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
             <select
               value={makeTypeId}
               onChange={(e) => {
@@ -439,6 +477,12 @@ export default function AdminCatalogPage() {
               value={makeName}
               onChange={(e) => setMakeName(e.target.value)}
               placeholder="Make name"
+              className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+            />
+            <input
+              value={makeLogoUrl}
+              onChange={(e) => setMakeLogoUrl(e.target.value)}
+              placeholder="Logo URL (https://...)"
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500 lg:col-span-2"
             />
             <button
@@ -450,8 +494,12 @@ export default function AdminCatalogPage() {
                   name: makeName,
                   vehicleTypeId: makeTypeId,
                   segmentId: makeSegmentId || undefined,
+                  logoUrl: makeLogoUrl || undefined,
                 });
-                if (ok) setMakeName("");
+                if (ok) {
+                  setMakeName("");
+                  setMakeLogoUrl("");
+                }
               }}
               className="h-10 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white"
             >
@@ -461,10 +509,27 @@ export default function AdminCatalogPage() {
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
             {makes.map((m) => (
               <li key={m.id} className="flex flex-wrap items-center gap-2 py-2">
+                {m.logoUrl ? (
+                  <img
+                    src={m.logoUrl}
+                    alt={`${m.name} logo`}
+                    className="h-9 w-9 rounded border border-slate-200 object-contain bg-white p-1"
+                  />
+                ) : (
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded border border-slate-200 text-xs text-slate-500">
+                    -
+                  </span>
+                )}
                 <input
                   defaultValue={m.name}
                   id={`mk-name-${m.id}`}
                   className="h-9 flex-1 min-w-[100px] rounded border border-slate-200 px-2"
+                />
+                <input
+                  defaultValue={m.logoUrl ?? ""}
+                  id={`mk-logo-${m.id}`}
+                  placeholder="Logo URL"
+                  className="h-9 min-w-[220px] flex-1 rounded border border-slate-200 px-2"
                 />
                 <select defaultValue={m.vehicleTypeId} id={`mk-type-${m.id}`} className="h-9 rounded border border-slate-200 px-2 text-xs">
                   {vehicleTypes.map((t) => (
@@ -488,12 +553,14 @@ export default function AdminCatalogPage() {
                   className="h-9 rounded-lg bg-slate-800 px-3 text-xs font-semibold text-white"
                   onClick={() => {
                     const nameEl = document.getElementById(`mk-name-${m.id}`) as HTMLInputElement | null;
+                    const logoEl = document.getElementById(`mk-logo-${m.id}`) as HTMLInputElement | null;
                     const typeEl = document.getElementById(`mk-type-${m.id}`) as HTMLSelectElement | null;
                     const segEl = document.getElementById(`mk-seg-${m.id}`) as HTMLSelectElement | null;
                     void patchJson({
                       entity: "make",
                       id: m.id,
                       name: nameEl?.value ?? m.name,
+                      logoUrl: logoEl?.value ?? m.logoUrl ?? "",
                       vehicleTypeId: typeEl?.value ?? m.vehicleTypeId,
                       segmentId: segEl?.value || null,
                     });

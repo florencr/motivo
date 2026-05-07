@@ -17,6 +17,7 @@ export async function getVehicleTypes() {
 export type PopularMakeFromListings = {
   id: string;
   name: string;
+  logoUrl: string | null;
   vehicleTypeSlug: string;
   publishedListingCount: number;
 };
@@ -48,6 +49,7 @@ export async function getPopularMakesFromListings(limit = 8): Promise<PopularMak
       select: {
         id: true,
         name: true,
+        logoUrl: true,
         vehicleType: { select: { slug: true } },
       },
     });
@@ -60,6 +62,7 @@ export async function getPopularMakesFromListings(limit = 8): Promise<PopularMak
         return {
           id: m.id,
           name: m.name,
+          logoUrl: m.logoUrl ?? null,
           vehicleTypeSlug: m.vehicleType.slug,
           publishedListingCount: g._count.id,
         };

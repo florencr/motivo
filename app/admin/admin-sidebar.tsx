@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const ADMIN_MENU = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/catalog", label: "Catalog Manager" },
+  { href: "/admin/imports", label: "Imports" },
   { href: "/admin/footer-pages", label: "Footer Pages" },
   { href: "/admin/users", label: "User Profiles" },
 ];

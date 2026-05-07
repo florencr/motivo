@@ -68,7 +68,7 @@ export default async function Home({ searchParams }: HomePageProps) {
                       isActive ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
-                    <VehicleTypeIcon icon={tab.icon} className="h-4 w-4" />
+                    <VehicleTypeIcon icon={tab.icon} typeSlug={tab.slug} className="h-4 w-4" />
                     {tab.name}
                   </a>
                 );
@@ -110,7 +110,13 @@ export default async function Home({ searchParams }: HomePageProps) {
                   className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                 >
                   <span className="text-slate-700" aria-hidden="true">
-                    <VehicleSegmentIcon icon={segment.icon} className="h-5 w-5" />
+                    <VehicleSegmentIcon
+                      icon={segment.icon}
+                      iconUrl={segment.iconUrl}
+                      segmentSlug={segment.slug}
+                      vehicleTypeSlug={selectedVehicleType}
+                      className="h-5 w-5"
+                    />
                   </span>
                   <span>{segment.name}</span>
                 </a>

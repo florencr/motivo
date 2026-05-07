@@ -43,7 +43,16 @@ export default function PopularMakes({ makes }: PopularMakesProps) {
                 href={`/cars?vehicleType=${encodeURIComponent(make.vehicleTypeSlug)}&make=${encodeURIComponent(make.name)}`}
                 className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 transition hover:border-slate-400 hover:bg-slate-50"
               >
-                <MakeInitialsMark name={make.name} />
+                {make.logoUrl ? (
+                  <img
+                    src={make.logoUrl}
+                    alt={`${make.name} logo`}
+                    className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 object-contain bg-white p-1"
+                    loading="lazy"
+                  />
+                ) : (
+                  <MakeInitialsMark name={make.name} />
+                )}
                 <span className="min-w-0 flex-1 text-sm font-medium text-slate-800">{make.name}</span>
               </a>
             ))}

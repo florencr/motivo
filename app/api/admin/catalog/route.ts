@@ -9,6 +9,7 @@ const VEHICLE_SEGMENT_ICON_KEYS = new Set([
   "suv",
   "hatchback",
   "coupe",
+  "convertible",
   "wagon",
   "van",
   "pickup",
@@ -19,6 +20,21 @@ const VEHICLE_SEGMENT_ICON_KEYS = new Set([
   "sailing",
   "boat",
 ]);
+
+const MAX_SEGMENT_ICON_URL = 2048;
+
+function normalizeVehicleSegmentIconUrl(input: unknown): string | null {
+  const raw = String(input ?? "").trim();
+  if (!raw) return null;
+  if (raw.length > MAX_SEGMENT_ICON_URL) return null;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+    return raw;
+  } catch {
+    return null;
+  }
+}
 
 function normalizeVehicleTypeIcon(input: unknown) {
   const value = String(input ?? "")
@@ -103,8 +119,9 @@ export async function POST(req: Request) {
       }
       const sortOrder = Number(body?.sortOrder ?? 0) || 0;
       const icon = normalizeVehicleSegmentIcon(body?.icon);
+      const iconUrl = normalizeVehicleSegmentIconUrl(body?.iconUrl);
       const segment = await prisma.vehicleSegment.create({
-        data: { name, slug, icon: icon || null, sortOrder, vehicleTypeId },
+        data: { name, slug, icon: icon || null, iconUrl, sortOrder, vehicleTypeId },
       });
       return NextResponse.json({ segment });
     }
@@ -122,12 +139,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "vehicleTypeId is required" }, { status: 400 });
       }
       const segmentId = body?.segmentId ? String(body.segmentId).trim() : null;
+      const logoUrl = body?.logoUrl != null ? String(body.logoUrl).trim() : null;
       const make = await prisma.make.create({
         data: {
           name,
           slug,
           vehicleTypeId,
           segmentId: segmentId || null,
+          logoUrl: logoUrl || null,
         },
       });
       return NextResponse.json({ make });
@@ -209,10 +228,13 @@ export async function PATCH(req: Request) {
       const sortOrder = body?.sortOrder != null ? Number(body.sortOrder) : undefined;
       const vehicleTypeId = body?.vehicleTypeId != null ? String(body.vehicleTypeId).trim() : undefined;
       const icon = body?.icon !== undefined ? normalizeVehicleSegmentIcon(body.icon) : undefined;
+      const iconUrl =
+        body?.iconUrl !== undefined ? normalizeVehicleSegmentIconUrl(body.iconUrl) : undefined;
       const data: {
         name?: string;
         slug?: string;
         icon?: string | null;
+        iconUrl?: string | null;
         sortOrder?: number;
         vehicleTypeId?: string;
       } = {};
@@ -229,6 +251,9 @@ export async function PATCH(req: Request) {
       if (icon !== undefined) {
         data.icon = icon || null;
       }
+      if (iconUrl !== undefined) {
+        data.iconUrl = iconUrl;
+      }
       if (vehicleTypeId !== undefined) {
         if (!vehicleTypeId) return NextResponse.json({ error: "invalid vehicleTypeId" }, { status: 400 });
         data.vehicleTypeId = vehicleTypeId;
@@ -243,6 +268,7 @@ export async function PATCH(req: Request) {
     if (entity === "make") {
       const name = body?.name != null ? String(body.name).trim() : undefined;
       const vehicleTypeId = body?.vehicleTypeId != null ? String(body.vehicleTypeId).trim() : undefined;
+      const logoUrl = body?.logoUrl != null ? String(body.logoUrl).trim() : undefined;
       const segmentId =
         body?.segmentId === "" || body?.segmentId === null
           ? null
@@ -254,6 +280,7 @@ export async function PATCH(req: Request) {
         slug?: string;
         vehicleTypeId?: string;
         segmentId?: string | null;
+        logoUrl?: string | null;
       } = {};
       if (name !== undefined) {
         if (!name) return NextResponse.json({ error: "invalid name" }, { status: 400 });
@@ -267,6 +294,9 @@ export async function PATCH(req: Request) {
       }
       if (segmentId !== undefined) {
         data.segmentId = segmentId;
+      }
+      if (logoUrl !== undefined) {
+        data.logoUrl = logoUrl || null;
       }
       if (Object.keys(data).length === 0) {
         return NextResponse.json({ error: "nothing to update" }, { status: 400 });

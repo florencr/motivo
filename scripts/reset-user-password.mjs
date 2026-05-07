@@ -2,7 +2,7 @@
  * Reset a user's password (same hashing as lib/auth.ts).
  *
  * Loads DATABASE_URL from env, or from files in order (later overrides earlier):
- *   .env  →  .env.production
+ *   .env  →  .env.production  →  .env.neon
  *
  * Usage:
  *   node scripts/reset-user-password.mjs <email> <newPassword>
@@ -15,6 +15,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomBytes, scryptSync } from "node:crypto";
 import { Client } from "pg";
+import { neonDirectUrl } from "./neon-direct-url.mjs";
 
 function parseEnvFile(contents) {
   const out = {};
@@ -40,7 +41,7 @@ function loadDatabaseUrl() {
   const root = resolve(process.cwd());
   const merged = {};
   const loadedFrom = [];
-  for (const name of [".env", ".env.production"]) {
+  for (const name of [".env", ".env.production", ".env.neon"]) {
     const p = resolve(root, name);
     if (!existsSync(p)) continue;
     loadedFrom.push(name);
@@ -92,7 +93,7 @@ async function main() {
   console.log(`Connecting to: ${describeDatabaseHost(connectionString)}`);
 
   const passwordHash = hashPassword(password);
-  const client = new Client({ connectionString });
+  const client = new Client({ connectionString: neonDirectUrl(connectionString) });
   await client.connect();
   const countRes = await client.query('SELECT count(*)::int AS c FROM "User"');
   const userCount = countRes.rows[0]?.c ?? 0;
