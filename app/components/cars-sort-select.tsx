@@ -25,12 +25,12 @@ export default function CarsSortSelect({ value }: CarsSortSelectProps) {
       onChange={(e) => onSortChange(e.target.value)}
       className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-slate-500"
     >
-      <option value="newest">Newest</option>
-      <option value="price_asc">Price: Low to High</option>
-      <option value="price_desc">Price: High to Low</option>
-      <option value="year_asc">Oldest</option>
-      <option value="mileage_asc">Mileage: Low to High</option>
-      <option value="mileage_desc">Mileage: High to Low</option>
+      <option value="newest">Më të rejat</option>
+      <option value="price_asc">Çmimi: më i ulët në më të lartë</option>
+      <option value="price_desc">Çmimi: më i lartë në më të ulët</option>
+      <option value="year_asc">Më të vjetrat</option>
+      <option value="mileage_asc">Kilometrazhi: më i ulët në më të lartë</option>
+      <option value="mileage_desc">Kilometrazhi: më i lartë në më të ulët</option>
     </select>
   );
 }

@@ -76,40 +76,110 @@ export async function upsertNormalizedListing(
     return { status: "SKIPPED", reason: validationError };
   }
 
-  const seller = await prisma.user.findFirst({
+  let seller = await prisma.user.findFirst({
     where: { email: { equals: defaults.sellerEmail, mode: "insensitive" } },
     select: { id: true },
   });
   if (!seller) {
-    return {
-      status: "FAILED",
-      reason: `seller email not found in database: ${defaults.sellerEmail}`,
-    };
+    const trimmedEmail = defaults.sellerEmail.trim();
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      return {
+        status: "FAILED",
+        reason: `invalid seller email: ${defaults.sellerEmail}`,
+      };
+    }
+    try {
+      const created = await prisma.user.create({
+        data: {
+          email: trimmedEmail,
+          name: trimmedEmail.split("@")[0] || trimmedEmail,
+          role: defaults.sellerType === "DEALER" ? "DEALER" : "PRIVATE_SELLER",
+          sellerType: defaults.sellerType,
+          isActive: true,
+          isVerified: false,
+        },
+        select: { id: true },
+      });
+      seller = created;
+    } catch (err) {
+      return {
+        status: "FAILED",
+        reason: `could not create seller ${trimmedEmail}: ${(err as Error).message}`,
+      };
+    }
   }
 
-  const make = await prisma.make.findFirst({
-    where: { name: { equals: record.makeName.trim(), mode: "insensitive" } },
+  const trimmedMakeName = record.makeName.trim();
+  let make = await prisma.make.findFirst({
+    where: { name: { equals: trimmedMakeName, mode: "insensitive" } },
     select: { id: true, name: true },
   });
   if (!make) {
-    return {
-      status: "SKIPPED",
-      reason: `make not in catalog: ${record.makeName}`,
-    };
+    const defaultType = await prisma.vehicleType.findFirst({
+      where: { slug: "makina" },
+      select: { id: true },
+    });
+    if (!defaultType) {
+      return {
+        status: "SKIPPED",
+        reason: `make not in catalog: ${trimmedMakeName} (no 'makina' vehicle type to attach to)`,
+      };
+    }
+    try {
+      const baseSlug = toSlug(trimmedMakeName) || "make";
+      let slug = baseSlug;
+      let suffix = 2;
+      while (
+        await prisma.make.findFirst({
+          where: { vehicleTypeId: defaultType.id, slug },
+          select: { id: true },
+        })
+      ) {
+        slug = `${baseSlug}-${suffix++}`;
+      }
+      make = await prisma.make.create({
+        data: { name: trimmedMakeName, slug, vehicleTypeId: defaultType.id },
+        select: { id: true, name: true },
+      });
+    } catch (err) {
+      return {
+        status: "SKIPPED",
+        reason: `could not create make ${trimmedMakeName}: ${(err as Error).message}`,
+      };
+    }
   }
 
-  const model = await prisma.model.findFirst({
+  const trimmedModelName = record.modelName.trim();
+  let model = await prisma.model.findFirst({
     where: {
       makeId: make.id,
-      name: { equals: record.modelName.trim(), mode: "insensitive" },
+      name: { equals: trimmedModelName, mode: "insensitive" },
     },
     select: { id: true, name: true },
   });
   if (!model) {
-    return {
-      status: "SKIPPED",
-      reason: `model not in catalog for ${make.name}: ${record.modelName}`,
-    };
+    try {
+      const baseSlug = toSlug(trimmedModelName) || "model";
+      let slug = baseSlug;
+      let suffix = 2;
+      while (
+        await prisma.model.findFirst({
+          where: { makeId: make.id, slug },
+          select: { id: true },
+        })
+      ) {
+        slug = `${baseSlug}-${suffix++}`;
+      }
+      model = await prisma.model.create({
+        data: { name: trimmedModelName, slug, makeId: make.id },
+        select: { id: true, name: true },
+      });
+    } catch (err) {
+      return {
+        status: "SKIPPED",
+        reason: `could not create model ${trimmedModelName} for ${make.name}: ${(err as Error).message}`,
+      };
+    }
   }
 
   const slug = resolveSlug(record);
@@ -136,6 +206,14 @@ export async function upsertNormalizedListing(
     sellerType,
     fuelType: record.fuelType,
     transmission: record.transmission,
+    engineCapacity:
+      Number.isFinite(record.engineCapacity) && (record.engineCapacity ?? 0) > 0
+        ? Math.round(record.engineCapacity ?? 0)
+        : null,
+    powerHp:
+      Number.isFinite(record.powerHp) && (record.powerHp ?? 0) > 0
+        ? Math.round(record.powerHp ?? 0)
+        : null,
     description: record.description?.trim() || record.title.trim(),
     city: record.city ?? null,
     features: featuresJson,

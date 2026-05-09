@@ -39,16 +39,20 @@ export type GenericConfig = {
 };
 
 const DEFAULT_USER_AGENT =
-  "MotivoBot/1.0 (+contact@motivo.example) — admin-managed import";
+  "MotivoBot/1.0 (+contact@motivo.example) - admin-managed import";
 
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
 }
 
+function safeHeaderValue(value: string): string {
+  return value.replace(/[^\x20-\x7e]/g, "-");
+}
+
 async function fetchHtml(url: string, userAgent: string): Promise<string> {
   const res = await fetch(url, {
     headers: {
-      "User-Agent": userAgent,
+      "User-Agent": safeHeaderValue(userAgent),
       Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9,sq;q=0.8",
     },

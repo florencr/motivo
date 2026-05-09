@@ -30,13 +30,13 @@ export default function FinanceCalculator({ price }: FinanceCalculatorProps) {
         onClick={() => setIsExpanded((value) => !value)}
         className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition hover:border-slate-500"
       >
-        <span>Loan Calculator</span>
+        <span>Llogaritësi i kredisë</span>
         <span>{isExpanded ? "−" : "+"}</span>
       </button>
 
       {isExpanded && (
         <>
-          <label className="mt-3 block text-xs text-slate-600">Downpayment (EUR)</label>
+          <label className="mt-3 block text-xs text-slate-600">Paradhënia (EUR)</label>
           <input
             type="number"
             min="0"
@@ -48,21 +48,21 @@ export default function FinanceCalculator({ price }: FinanceCalculatorProps) {
 
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-slate-600">Loan Term</label>
+              <label className="block text-xs text-slate-600">Afati i kredisë</label>
               <select
                 value={months}
                 onChange={(e) => setMonths(Number(e.target.value))}
                 className="mt-1 h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-sm outline-none focus:border-slate-500"
               >
-                <option value={24}>24 months</option>
-                <option value={36}>36 months</option>
-                <option value={48}>48 months</option>
-                <option value={60}>60 months</option>
-                <option value={72}>72 months</option>
+                <option value={24}>24 muaj</option>
+                <option value={36}>36 muaj</option>
+                <option value={48}>48 muaj</option>
+                <option value={60}>60 muaj</option>
+                <option value={72}>72 muaj</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-600">Interest (%)</label>
+              <label className="block text-xs text-slate-600">Interesi (%)</label>
               <input
                 type="number"
                 min="0"
@@ -74,7 +74,7 @@ export default function FinanceCalculator({ price }: FinanceCalculatorProps) {
             </div>
           </div>
 
-          <p className="mt-3 text-xs text-slate-600">Estimated monthly payment</p>
+          <p className="mt-3 text-xs text-slate-600">Pagesa mujore e parashikuar</p>
           <p className="text-lg font-bold text-slate-900">
             EUR {Math.round(monthlyPayment).toLocaleString()}
           </p>

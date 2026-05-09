@@ -45,6 +45,5 @@ next-env.d.ts
 # local DB snapshot (may contain private data)
 carlist-data.sql
 
-.vercel
-
-.vercel
+# user uploads (keep out of git; use blob/CDN in production)
+/public/uploads

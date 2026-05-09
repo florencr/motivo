@@ -371,7 +371,7 @@ async function main() {
   try {
     await client.query("BEGIN");
 
-    for (const tag of ["No Accident", "One Owner", "Full Casco"]) {
+    for (const tag of ["Damaged Vehicle", "No Accident", "One Owner", "Full Casco"]) {
       await upsertOption(client, "ListingTagOption", tag);
     }
     for (const feature of [

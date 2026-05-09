@@ -8,6 +8,34 @@ type VehicleSegment = { id: string; name: string; vehicleTypeId: string };
 type Make = { id: string; name: string; vehicleTypeId: string; segmentId?: string | null };
 type Model = { id: string; name: string; make: { name: string }; makeId?: string };
 
+type RegistrationStatusValue =
+  | ""
+  | "albanian_plates"
+  | "customs_paid"
+  | "taxes_due";
+
+export type SellFormInitial = {
+  title?: string;
+  vehicleTypeId?: string;
+  segmentId?: string;
+  makeId?: string;
+  modelId?: string;
+  year?: number | string;
+  mileageKm?: number | string;
+  price?: number | string;
+  fuelType?: string;
+  transmission?: string;
+  city?: string;
+  description?: string;
+  selectedFeatures?: string[];
+  selectedTags?: string[];
+  registrationStatus?: RegistrationStatusValue;
+  isTaxRefundable?: boolean;
+  engineCapacity?: number | string | null;
+  powerHp?: number | string | null;
+  imageUrls?: string[];
+};
+
 type SellFormProps = {
   vehicleTypes: VehicleTypeRow[];
   vehicleSegments: VehicleSegment[];
@@ -15,6 +43,9 @@ type SellFormProps = {
   models: Model[];
   tagOptions: string[];
   featureOptions: string[];
+  mode?: "create" | "edit";
+  listingId?: string;
+  initial?: SellFormInitial;
 };
 
 export default function SellForm({
@@ -24,13 +55,20 @@ export default function SellForm({
   models,
   tagOptions,
   featureOptions,
+  mode = "create",
+  listingId,
+  initial,
 }: SellFormProps) {
+  const isEditMode = mode === "edit";
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [coverIndex, setCoverIndex] = useState(0);
+  const [existingImageUrls, setExistingImageUrls] = useState<string[]>(
+    initial?.imageUrls ?? [],
+  );
 
   function releasePreviewUrls(urls: string[]) {
     for (const url of urls) {
@@ -60,24 +98,44 @@ export default function SellForm({
     setSelectedFiles(nextFiles);
   }
 
-  const [title, setTitle] = useState("");
-  const [vehicleTypeId, setVehicleTypeId] = useState(vehicleTypes[0]?.id ?? "");
-  const [makeId, setMakeId] = useState("");
-  const [modelId, setModelId] = useState("");
-  const [year, setYear] = useState("");
-  const [mileageKm, setMileageKm] = useState("");
-  const [price, setPrice] = useState("");
-  const [fuelType, setFuelType] = useState("PETROL");
-  const [transmission, setTransmission] = useState("MANUAL");
-  const [ownerCount, setOwnerCount] = useState("1");
-  const [hasAccidentHistory, setHasAccidentHistory] = useState(false);
-  const [damageSeverity, setDamageSeverity] = useState("none");
-  const [hasServiceHistory, setHasServiceHistory] = useState(false);
-  const [city, setCity] = useState("");
-  const [description, setDescription] = useState("");
-  const [segmentId, setSegmentId] = useState("");
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [vehicleTypeId, setVehicleTypeId] = useState(
+    initial?.vehicleTypeId ?? vehicleTypes[0]?.id ?? "",
+  );
+  const [makeId, setMakeId] = useState(initial?.makeId ?? "");
+  const [modelId, setModelId] = useState(initial?.modelId ?? "");
+  const [year, setYear] = useState(
+    initial?.year != null ? String(initial.year) : "",
+  );
+  const [mileageKm, setMileageKm] = useState(
+    initial?.mileageKm != null ? String(initial.mileageKm) : "",
+  );
+  const [price, setPrice] = useState(
+    initial?.price != null ? String(initial.price) : "",
+  );
+  const [fuelType, setFuelType] = useState(initial?.fuelType ?? "PETROL");
+  const [transmission, setTransmission] = useState(initial?.transmission ?? "MANUAL");
+  const [city, setCity] = useState(initial?.city ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [segmentId, setSegmentId] = useState(initial?.segmentId ?? "");
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(
+    initial?.selectedFeatures ?? [],
+  );
+  const [selectedTags, setSelectedTags] = useState<string[]>(
+    initial?.selectedTags ?? [],
+  );
+  const [registrationStatus, setRegistrationStatus] = useState<RegistrationStatusValue>(
+    initial?.registrationStatus ?? "",
+  );
+  const [isTaxRefundable, setIsTaxRefundable] = useState(
+    initial?.isTaxRefundable ?? false,
+  );
+  const [engineCapacity, setEngineCapacity] = useState(
+    initial?.engineCapacity != null ? String(initial.engineCapacity) : "",
+  );
+  const [powerHp, setPowerHp] = useState(
+    initial?.powerHp != null ? String(initial.powerHp) : "",
+  );
 
   const filteredSegments = useMemo(() => {
     if (!vehicleTypeId) return vehicleSegments;
@@ -103,7 +161,7 @@ export default function SellForm({
     setIsSubmitting(true);
 
     try {
-      let imageUrls: string[] = [];
+      let uploadedImageUrls: string[] = [];
       if (files.length > 0) {
         const orderedFiles = [...files];
         const selectedCover = orderedFiles[coverIndex];
@@ -123,58 +181,89 @@ export default function SellForm({
         });
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok) {
-          setError(uploadData?.error ?? "Failed to upload images");
+          setError(uploadData?.error ?? "Ngarkimi i fotove dështoi");
           return;
         }
-        imageUrls = uploadData.urls ?? [];
+        uploadedImageUrls = uploadData.urls ?? [];
       }
 
-      const res = await fetch("/api/listings", {
-        method: "POST",
+      const finalImageUrls = isEditMode
+        ? [...existingImageUrls, ...uploadedImageUrls]
+        : uploadedImageUrls;
+
+      const payload = {
+        title,
+        vehicleTypeId,
+        segmentId: segmentId || null,
+        makeId,
+        modelId,
+        year: Number(year),
+        mileageKm: Number(mileageKm),
+        price: Number(price),
+        fuelType,
+        transmission,
+        city,
+        description,
+        selectedFeatures,
+        selectedTags,
+        imageUrls: finalImageUrls,
+        registrationStatus,
+        hasAlbanianPlates:
+          registrationStatus === ""
+            ? null
+            : registrationStatus === "albanian_plates",
+        isCustomsPaid:
+          registrationStatus === ""
+            ? null
+            : registrationStatus === "albanian_plates" ||
+              registrationStatus === "customs_paid",
+        isTaxRefundable,
+        engineCapacity: engineCapacity ? Number(engineCapacity) : null,
+        powerHp: powerHp ? Number(powerHp) : null,
+      };
+
+      const url = isEditMode && listingId
+        ? `/api/dashboard/listings/${listingId}`
+        : "/api/listings";
+      const method = isEditMode ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          vehicleTypeId,
-          segmentId: segmentId || null,
-          makeId,
-          modelId,
-          year: Number(year),
-          mileageKm: Number(mileageKm),
-          price: Number(price),
-          fuelType,
-          transmission,
-          ownerCount: Number(ownerCount),
-          hasAccidentHistory,
-          damageSeverity: damageSeverity === "none" ? null : damageSeverity,
-          hasServiceHistory,
-          city,
-          description,
-          selectedFeatures,
-          selectedTags,
-          imageUrls,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "Failed to create listing");
+        setError(data?.error ?? (isEditMode ? "Përditësimi i listimit dështoi" : "Krijimi i listimit dështoi"));
         return;
       }
-      setSuccess("Vehicle listing created successfully.");
+
+      if (isEditMode) {
+        setSuccess("Listimi u përditësua me sukses.");
+        setExistingImageUrls(finalImageUrls);
+        releasePreviewUrls(previewUrls);
+        setFiles([]);
+        setPreviewUrls([]);
+        setCoverIndex(0);
+        return;
+      }
+
+      setSuccess("Listimi i mjetit u krijua me sukses.");
       setTitle("");
       setMakeId("");
       setModelId("");
       setYear("");
       setMileageKm("");
       setPrice("");
-      setOwnerCount("1");
-      setHasAccidentHistory(false);
-      setDamageSeverity("none");
-      setHasServiceHistory(false);
       setCity("");
       setDescription("");
       setSegmentId("");
       setSelectedFeatures([]);
       setSelectedTags([]);
+      setRegistrationStatus("");
+      setIsTaxRefundable(false);
+      setEngineCapacity("");
+      setPowerHp("");
       releasePreviewUrls(previewUrls);
       setFiles([]);
       setPreviewUrls([]);
@@ -182,6 +271,22 @@ export default function SellForm({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function removeExistingImage(url: string) {
+    setExistingImageUrls((prev) => prev.filter((item) => item !== url));
+  }
+
+  function moveExistingImage(index: number, direction: "left" | "right") {
+    const targetIndex = direction === "left" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= existingImageUrls.length) return;
+    setExistingImageUrls((prev) => {
+      const next = [...prev];
+      const tmp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = tmp;
+      return next;
+    });
   }
 
   return (
@@ -192,7 +297,7 @@ export default function SellForm({
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
+        placeholder="Titulli"
         required
         className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm"
       />
@@ -209,7 +314,7 @@ export default function SellForm({
           required
           className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
         >
-          <option value="">Vehicle type</option>
+          <option value="">Lloji i mjetit</option>
           {vehicleTypes.map((vt) => (
             <option key={vt.id} value={vt.id}>
               {vt.name}
@@ -225,7 +330,7 @@ export default function SellForm({
           }}
           className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
         >
-          <option value="">Select category</option>
+          <option value="">Zgjidh kategorinë</option>
           {filteredSegments.map((segment) => (
             <option key={segment.id} value={segment.id}>
               {segment.name}
@@ -239,9 +344,9 @@ export default function SellForm({
             setModelId("");
           }}
           options={filteredMakes.map((make) => ({ value: make.id, label: make.name }))}
-          placeholder={filteredMakes.length > 0 ? "Select make" : "No makes for this category"}
-          searchPlaceholder="Search make..."
-          emptyText="No makes found"
+          placeholder={filteredMakes.length > 0 ? "Zgjidh markën" : "Asnjë markë për këtë kategori"}
+          searchPlaceholder="Kërko markë..."
+          emptyText="Nuk u gjet asnjë markë"
         />
         <SearchableSelect
           value={modelId}
@@ -251,10 +356,10 @@ export default function SellForm({
             label: `${model.make.name} - ${model.name}`,
           }))}
           placeholder={
-            makeId ? (filteredModels.length > 0 ? "Select model" : "No models for this make") : "Select make first"
+            makeId ? (filteredModels.length > 0 ? "Zgjidh modelin" : "Asnjë model për këtë markë") : "Zgjidh markën më parë"
           }
-          searchPlaceholder="Search model..."
-          emptyText="No models found"
+          searchPlaceholder="Kërko model..."
+          emptyText="Nuk u gjet asnjë model"
           disabled={!makeId}
         />
       </div>
@@ -264,7 +369,7 @@ export default function SellForm({
           type="number"
           value={year}
           onChange={(e) => setYear(e.target.value)}
-          placeholder="Year"
+          placeholder="Viti"
           min="1900"
           required
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
@@ -273,7 +378,7 @@ export default function SellForm({
           type="number"
           value={mileageKm}
           onChange={(e) => setMileageKm(e.target.value)}
-          placeholder="Mileage km"
+          placeholder="Kilometrazhi (km)"
           min="0"
           required
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
@@ -282,47 +387,11 @@ export default function SellForm({
           type="number"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          placeholder="Price EUR"
+          placeholder="Çmimi EUR"
           min="0"
           required
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
         />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-4">
-        <input
-          type="number"
-          value={ownerCount}
-          onChange={(e) => setOwnerCount(e.target.value)}
-          placeholder="Owners count"
-          min="1"
-          className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
-        />
-        <select
-          value={damageSeverity}
-          onChange={(e) => setDamageSeverity(e.target.value)}
-          className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
-        >
-          <option value="none">No damage</option>
-          <option value="minor">Minor damage</option>
-          <option value="major">Major damage</option>
-        </select>
-        <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={hasAccidentHistory}
-            onChange={(e) => setHasAccidentHistory(e.target.checked)}
-          />
-          Accident history
-        </label>
-        <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={hasServiceHistory}
-            onChange={(e) => setHasServiceHistory(e.target.checked)}
-          />
-          Full service history
-        </label>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -331,10 +400,10 @@ export default function SellForm({
           onChange={(e) => setFuelType(e.target.value)}
           className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
         >
-          <option value="PETROL">Petrol</option>
-          <option value="DIESEL">Diesel</option>
-          <option value="ELECTRIC">Electric</option>
-          <option value="HYBRID">Hybrid</option>
+          <option value="PETROL">Benzinë</option>
+          <option value="DIESEL">Naftë</option>
+          <option value="ELECTRIC">Elektrik</option>
+          <option value="HYBRID">Hibrid</option>
         </select>
         <select
           value={transmission}
@@ -342,26 +411,92 @@ export default function SellForm({
           className="h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm"
         >
           <option value="MANUAL">Manual</option>
-          <option value="AUTOMATIC">Automatic</option>
+          <option value="AUTOMATIC">Automatik</option>
         </select>
         <input
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          placeholder="City"
+          placeholder="Qyteti"
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
         />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <input
+          type="number"
+          value={engineCapacity}
+          onChange={(e) => setEngineCapacity(e.target.value)}
+          placeholder="Kapaciteti i motorit (cc)"
+          min="0"
+          className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
+        />
+        <input
+          type="number"
+          value={powerHp}
+          onChange={(e) => setPowerHp(e.target.value)}
+          placeholder="Fuqia (hp)"
+          min="0"
+          className="h-11 rounded-lg border border-slate-300 px-3 text-sm"
+        />
+      </div>
+
+      <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+        <p className="text-sm font-medium text-slate-700">Statusi i regjistrimit</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            { value: "albanian_plates" as const, label: "Targa shqiptare" },
+            { value: "customs_paid" as const, label: "Doganë e paguar (pa targa)" },
+            { value: "taxes_due" as const, label: "Tatim doganor pa paguar" },
+          ].map((option) => (
+            <label
+              key={option.value}
+              className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                registrationStatus === option.value
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
+              }`}
+            >
+              <input
+                type="radio"
+                name="registrationStatus"
+                value={option.value}
+                checked={registrationStatus === option.value}
+                onChange={() => setRegistrationStatus(option.value)}
+                className="hidden"
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+        {registrationStatus ? (
+          <button
+            type="button"
+            onClick={() => setRegistrationStatus("")}
+            className="text-xs font-medium text-slate-600 underline"
+          >
+            Pastro statusin e regjistrimit
+          </button>
+        ) : null}
+        <label className="mt-1 flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={isTaxRefundable}
+            onChange={(e) => setIsTaxRefundable(e.target.checked)}
+          />
+          Tatim i rimbursueshëm
+        </label>
       </div>
 
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Description"
+        placeholder="Përshkrimi"
         required
         className="min-h-32 w-full rounded-lg border border-slate-300 p-3 text-sm"
       />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-slate-700">Listing tags</p>
+        <p className="text-sm font-medium text-slate-700">Etiketat e listimit</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {tagOptions.map((tag) => {
             const checked = selectedTags.includes(tag);
@@ -386,7 +521,7 @@ export default function SellForm({
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-slate-700">Features</p>
+        <p className="text-sm font-medium text-slate-700">Karakteristikat</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {featureOptions.map((feature) => {
             const checked = selectedFeatures.includes(feature);
@@ -411,7 +546,52 @@ export default function SellForm({
       </div>
 
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-700">Photos</label>
+        <label className="block text-sm font-medium text-slate-700">Fotografi</label>
+
+        {isEditMode && existingImageUrls.length > 0 && (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {existingImageUrls.map((url, index) => (
+              <div key={url} className="rounded border border-slate-200 p-2">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700">
+                    {index === 0 ? "Foto kryesore" : `Foto ${index + 1}`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeExistingImage(url)}
+                    className="text-xs text-red-600"
+                  >
+                    Fshi
+                  </button>
+                </div>
+
+                <img
+                  src={url}
+                  alt="Foto ekzistuese"
+                  className="h-24 w-full rounded border border-slate-200 object-cover"
+                />
+
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => moveExistingImage(index, "left")}
+                    className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700"
+                  >
+                    Lëviz majtas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveExistingImage(index, "right")}
+                    className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700"
+                  >
+                    Lëviz djathtas
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <input
           type="file"
           accept="image/jpeg,image/jpg,image/png,image/webp"
@@ -420,7 +600,7 @@ export default function SellForm({
             const selected = Array.from(e.target.files ?? []);
             setSelectedFiles(selected);
           }}
-          className="block w-full text-sm text-slate-700"
+          className="block w-full text-sm text-slate-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-slate-300 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:border-slate-500 hover:file:bg-slate-50"
         />
         {previewUrls.length > 0 && (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -436,20 +616,20 @@ export default function SellForm({
                         : "bg-slate-100 text-slate-700"
                     }`}
                   >
-                    {coverIndex === index ? "Cover Photo" : "Set as Cover"}
+                    {coverIndex === index ? "Foto kryesore" : "Vendos si foto kryesore"}
                   </button>
                   <button
                     type="button"
                     onClick={() => removePhoto(index)}
                     className="text-xs text-red-600"
                   >
-                    Delete
+                    Fshi
                   </button>
                 </div>
 
                 <img
                   src={url}
-                  alt="Upload preview"
+                  alt="Pamja paraprake e foto-s"
                   className="h-24 w-full rounded border border-slate-200 object-cover"
                 />
 
@@ -459,14 +639,14 @@ export default function SellForm({
                     onClick={() => movePhoto(index, "left")}
                     className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700"
                   >
-                    Move Left
+                    Lëviz majtas
                   </button>
                   <button
                     type="button"
                     onClick={() => movePhoto(index, "right")}
                     className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700"
                   >
-                    Move Right
+                    Lëviz djathtas
                   </button>
                 </div>
               </div>
@@ -480,7 +660,13 @@ export default function SellForm({
         disabled={isSubmitting}
         className="h-11 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {isSubmitting ? "Publishing..." : "Publish Vehicle"}
+        {isSubmitting
+          ? isEditMode
+            ? "Po ruhet..."
+            : "Po publikohet..."
+          : isEditMode
+          ? "Ruaj ndryshimet"
+          : "Publiko mjetin"}
       </button>
     </form>
   );

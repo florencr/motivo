@@ -15,10 +15,17 @@ export type VehicleTypeIconKey = (typeof VEHICLE_TYPE_ICON_OPTIONS)[number]["val
 export function inferVehicleTypeIconKey(typeSlug?: string | null): VehicleTypeIconKey {
   const s = (typeSlug ?? "").toLowerCase().trim();
   if (!s) return "car";
-  if (s.includes("motor") || s === "bikes" || s === "bike") return "motorcycle";
-  if (s.includes("truck")) return "truck";
-  if (s.includes("boat") || s === "marine" || s === "watercraft") return "boat";
-  if (s.includes("van")) return "van";
+  if (s.includes("motor") || s.includes("motoc") || s === "bikes" || s === "bike")
+    return "motorcycle";
+  if (s.includes("truck") || s.includes("kamion")) return "truck";
+  if (
+    s.includes("boat") ||
+    s === "marine" ||
+    s === "watercraft" ||
+    s.includes("varka")
+  )
+    return "boat";
+  if (s.includes("van") || s.includes("furgon")) return "van";
   if (s.includes("bus")) return "bus";
   return "car";
 }

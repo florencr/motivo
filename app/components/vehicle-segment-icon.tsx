@@ -15,9 +15,15 @@ const SIMPLE_CAR_BODY_KEYS = new Set(["suv", "coupe", "convertible", "wagon"]);
 function isCarLikeVehicleType(vehicleTypeSlug?: string | null): boolean {
   const vt = (vehicleTypeSlug ?? "").toLowerCase().trim();
   if (!vt) return true;
-  if (vt.includes("truck")) return false;
-  if (vt.includes("boat") || vt === "marine") return false;
-  if (vt.includes("motor") || vt === "bikes" || vt === "bike") return false;
+  if (vt.includes("truck") || vt.includes("kamion")) return false;
+  if (vt.includes("boat") || vt === "marine" || vt.includes("varka")) return false;
+  if (
+    vt.includes("motor") ||
+    vt.includes("motoc") ||
+    vt === "bikes" ||
+    vt === "bike"
+  )
+    return false;
   return true;
 }
 

@@ -28,13 +28,13 @@ export default function CardActions({
           href={viewHref}
           className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
         >
-          View Car
+          Shiko makinën
         </a>
       )}
       <button
         type="button"
         onClick={() => setIsWishlisted((value) => !value)}
-        aria-label={`Add ${carTitle} to wishlist`}
+        aria-label={`Shto ${carTitle} te të preferuarat`}
         className={`inline-flex h-10 items-center justify-center rounded-lg border transition ${
           isWishlisted
             ? "border-slate-900 bg-slate-900 text-white"
@@ -42,12 +42,12 @@ export default function CardActions({
         } ${showTextLabels ? "gap-1.5 px-2.5 text-xs font-medium" : "w-10 text-base"}`}
       >
         <Heart className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`} strokeWidth={2} />
-        {showTextLabels && <span>Add to wishlist</span>}
+        {showTextLabels && <span>Shto te të preferuarat</span>}
       </button>
       <button
         type="button"
         onClick={() => setIsCompared((value) => !value)}
-        aria-label={`Add ${carTitle} to compare`}
+        aria-label={`Shto ${carTitle} te krahasimi`}
         className={`inline-flex h-10 items-center justify-center rounded-lg border transition ${
           isCompared
             ? "border-slate-900 bg-slate-900 text-white"
@@ -55,18 +55,18 @@ export default function CardActions({
         } ${showTextLabels ? "gap-1.5 px-2.5 text-xs font-medium" : "w-10 text-base"}`}
       >
         <GitCompareArrows className="h-5 w-5" strokeWidth={2} />
-        {showTextLabels && <span>Add to compare</span>}
+        {showTextLabels && <span>Shto te krahasimi</span>}
       </button>
       {showShareButton && (
         <button
           type="button"
-          aria-label={`Share ${carTitle}`}
+          aria-label={`Shpërnda ${carTitle}`}
           className={`inline-flex h-10 items-center justify-center rounded-lg border transition border-slate-300 text-slate-700 hover:border-slate-500 hover:bg-slate-100 ${
             showTextLabels ? "gap-1.5 px-2.5 text-xs font-medium" : "w-10 text-base"
           }`}
         >
           <Share2 className="h-5 w-5" strokeWidth={2} />
-          {showTextLabels && <span>Share</span>}
+          {showTextLabels && <span>Shpërnda</span>}
         </button>
       )}
     </div>

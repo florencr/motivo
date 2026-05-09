@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "Failed to update user");
+      setError(data?.error ?? "Përditësimi i përdoruesit dështoi");
       return;
     }
     await loadUsers();
@@ -53,22 +53,22 @@ export default function AdminUsersPage() {
   return (
     <main className="space-y-6">
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-bold text-slate-900">Admin Users</h1>
-        <p className="mt-2 text-sm text-slate-600">View sellers (companies/private) and all their listings.</p>
+        <h1 className="text-3xl font-bold text-slate-900">Profilet e përdoruesve</h1>
+        <p className="mt-2 text-sm text-slate-600">Shiko shitësit (kompani/privatë) dhe të gjitha listimet e tyre.</p>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <div className="mt-5 overflow-x-auto">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="border-b border-slate-200 text-slate-600">
               <tr>
-                <th className="py-2">Name</th>
+                <th className="py-2">Emri</th>
                 <th className="py-2">Email</th>
-                <th className="py-2">Role</th>
-                <th className="py-2">Company</th>
-                <th className="py-2">Listings</th>
-                <th className="py-2">Verified</th>
-                <th className="py-2">Status</th>
-                <th className="py-2">Action</th>
+                <th className="py-2">Roli</th>
+                <th className="py-2">Kompania</th>
+                <th className="py-2">Listimet</th>
+                <th className="py-2">I verifikuar</th>
+                <th className="py-2">Statusi</th>
+                <th className="py-2">Veprim</th>
               </tr>
             </thead>
             <tbody>
@@ -84,26 +84,26 @@ export default function AdminUsersPage() {
                   <td className="py-2 text-slate-700">{user.companyName ?? "-"}</td>
                   <td className="py-2 text-slate-700">
                     <div className="space-y-1">
-                      <p className="text-xs text-slate-500">{user.listings.length} listing(s)</p>
+                      <p className="text-xs text-slate-500">{user.listings.length} listim(e)</p>
                       {user.listings.slice(0, 3).map((listing) => (
                         <p key={listing.id} className="text-xs">
                           {listing.title} ({listing.year}) - {listing.currency} {Number(listing.price).toLocaleString()}
                         </p>
                       ))}
                       {user.listings.length > 3 ? (
-                        <p className="text-xs text-slate-500">+{user.listings.length - 3} more...</p>
+                        <p className="text-xs text-slate-500">+{user.listings.length - 3} të tjera...</p>
                       ) : null}
                     </div>
                   </td>
-                  <td className="py-2 text-slate-700">{user.isVerified ? "Yes" : "No"}</td>
-                  <td className="py-2 text-slate-700">{user.isActive ? "Active" : "Suspended"}</td>
+                  <td className="py-2 text-slate-700">{user.isVerified ? "Po" : "Jo"}</td>
+                  <td className="py-2 text-slate-700">{user.isActive ? "Aktiv" : "I pezulluar"}</td>
                   <td className="py-2">
                     <button
                       type="button"
                       onClick={() => toggleUser(user)}
                       className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700"
                     >
-                      {user.isActive ? "Suspend" : "Activate"}
+                      {user.isActive ? "Pezullo" : "Aktivizo"}
                     </button>
                   </td>
                 </tr>

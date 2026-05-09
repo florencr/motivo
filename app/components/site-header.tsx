@@ -1,4 +1,9 @@
-export default function SiteHeader() {
+import { getCurrentUser } from "@/lib/session-user";
+import UserMenu from "./user-menu";
+
+export default async function SiteHeader() {
+  const user = await getCurrentUser();
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -21,38 +26,51 @@ export default function SiteHeader() {
           <span className="text-2xl font-bold tracking-tight">Motivo</span>
         </a>
 
-        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-700 md:flex">
+        <nav className="hidden items-center gap-5 text-sm font-medium text-slate-700 md:flex">
           <a href="/" className="transition hover:text-slate-900">
-            Home
+            Kreu
           </a>
-          <a href="/cars" className="transition hover:text-slate-900">
-            Cars
+          <a href="/automjetet" className="transition hover:text-slate-900">
+            Automjetet
           </a>
           <a href="/dealers" className="transition hover:text-slate-900">
-            Dealers
+            Koncesionarët
           </a>
         </nav>
 
         <div className="flex items-center gap-2">
           <a
-            href="/sell"
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3 text-sm font-semibold text-white transition hover:bg-emerald-500"
+            href="/dashboard/sell"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
-            + Add Vehicle
+            + Shto mjet
           </a>
-          <a
-            href="/login"
-            aria-label="Login"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:border-slate-500 hover:bg-slate-100"
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="12" cy="8" r="3.2" />
-              <path d="M5 19c1.3-3 3.8-4.5 7-4.5s5.7 1.5 7 4.5" />
-            </svg>
-          </a>
+          {user ? (
+            <UserMenu
+              user={{
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                avatarUrl: user.avatarUrl ?? null,
+              }}
+            />
+          ) : (
+            <a
+              href="/login"
+              aria-label="Identifikohu"
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-medium text-slate-700 transition hover:border-slate-500 hover:bg-slate-100"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="8" r="3.2" />
+                <path d="M5 19c1.3-3 3.8-4.5 7-4.5s5.7 1.5 7 4.5" />
+              </svg>
+              <span className="hidden sm:inline">Identifikohu</span>
+            </a>
+          )}
           <a
             href="#"
-            aria-label="Wishlist"
+            aria-label="Të preferuarat"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:border-slate-500 hover:bg-slate-100"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -61,7 +79,7 @@ export default function SiteHeader() {
           </a>
           <a
             href="#"
-            aria-label="Comparison"
+            aria-label="Krahasimi"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:border-slate-500 hover:bg-slate-100"
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">

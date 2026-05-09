@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "**" },
+      { protocol: "http", hostname: "**" },
+    ],
+    formats: ["image/avif", "image/webp"],
+  },
   async redirects() {
     return [
       {
@@ -12,6 +19,36 @@ const nextConfig: NextConfig = {
         source: "/en/:path*",
         destination: "/:path*",
         permanent: false,
+      },
+      {
+        source: "/cars",
+        destination: "/makina",
+        permanent: true,
+      },
+      {
+        source: "/cars/:path*",
+        destination: "/makina/:path*",
+        permanent: true,
+      },
+      {
+        source: "/motorcycles",
+        destination: "/motocikleta",
+        permanent: true,
+      },
+      {
+        source: "/vans",
+        destination: "/furgona",
+        permanent: true,
+      },
+      {
+        source: "/boats",
+        destination: "/varka",
+        permanent: true,
+      },
+      {
+        source: "/trucks",
+        destination: "/kamione",
+        permanent: true,
       },
     ];
   },

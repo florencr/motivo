@@ -11,6 +11,7 @@ import {
   VehicleSegmentIcon,
   inferVehicleSegmentIconKey,
 } from "@/app/components/vehicle-segment-icon";
+import MakeLogoUpload from "./make-logo-upload";
 
 type VehicleType = { id: string; name: string; slug: string; icon: string | null; sortOrder: number };
 type VehicleSegment = {
@@ -93,7 +94,7 @@ export default function AdminCatalogPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "Failed");
+      setError(data?.error ?? "Veprimi dështoi");
       return false;
     }
     await loadCatalog();
@@ -109,7 +110,7 @@ export default function AdminCatalogPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "Failed");
+      setError(data?.error ?? "Veprimi dështoi");
       return false;
     }
     await loadCatalog();
@@ -117,14 +118,14 @@ export default function AdminCatalogPage() {
   }
 
   async function deleteEntity(entity: string, id: string) {
-    if (!confirm("Delete this item?")) return;
+    if (!confirm("Të fshihet ky element?")) return;
     setError("");
     const res = await fetch(`/api/admin/catalog?entity=${encodeURIComponent(entity)}&id=${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data?.error ?? "Failed");
+      setError(data?.error ?? "Veprimi dështoi");
       return;
     }
     await loadCatalog();
@@ -137,10 +138,10 @@ export default function AdminCatalogPage() {
 
   return (
     <main className="space-y-6">
-      <h1 className="text-3xl font-bold text-slate-900">Admin Catalog</h1>
+      <h1 className="text-3xl font-bold text-slate-900">Katalogu i administrimit</h1>
       <p className="text-sm text-slate-600">
-        Top level: vehicle types (Cars, Vans, ...). Second level: segments per type (Sedan, SUV, ...). Then makes and
-        models. Edit inline and save, or delete.
+        Niveli kryesor: lloje mjetesh (Makina, Furgona, ...). Niveli i dytë: segmente sipas llojit (Sedan, SUV, ...). Më pas markat dhe modelet.
+        Modifiko në vend dhe ruaj, ose fshi.
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -152,7 +153,7 @@ export default function AdminCatalogPage() {
             activeSection === "types" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
           }`}
         >
-          Vehicle Types
+          Llojet e mjeteve
         </button>
         <button
           type="button"
@@ -161,7 +162,7 @@ export default function AdminCatalogPage() {
             activeSection === "segments" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
           }`}
         >
-          Segments
+          Segmentet
         </button>
         <button
           type="button"
@@ -170,7 +171,7 @@ export default function AdminCatalogPage() {
             activeSection === "makes" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
           }`}
         >
-          Makes
+          Markat
         </button>
         <button
           type="button"
@@ -179,18 +180,18 @@ export default function AdminCatalogPage() {
             activeSection === "models" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"
           }`}
         >
-          Models
+          Modelet
         </button>
       </div>
 
       {activeSection === "types" && (
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Vehicle types</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Llojet e mjeteve</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             <input
               value={typeName}
               onChange={(e) => setTypeName(e.target.value)}
-              placeholder="Name (e.g. Cars)"
+              placeholder="Emri (p.sh. Makina)"
               className="h-10 min-w-[160px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
             <select
@@ -208,7 +209,7 @@ export default function AdminCatalogPage() {
               value={typeSort}
               onChange={(e) => setTypeSort(e.target.value)}
               type="number"
-              placeholder="Sort"
+              placeholder="Renditja"
               className="h-10 w-24 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
             <button
@@ -229,7 +230,7 @@ export default function AdminCatalogPage() {
               }}
               className="h-10 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white"
             >
-              Add type
+              Shto lloj
             </button>
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
@@ -271,14 +272,14 @@ export default function AdminCatalogPage() {
                     });
                   }}
                 >
-                  Save
+                  Ruaj
                 </button>
                 <button
                   type="button"
                   className="h-9 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-700"
                   onClick={() => deleteEntity("vehicleType", t.id)}
                 >
-                  Delete
+                  Fshi
                 </button>
               </li>
             ))}
@@ -288,7 +289,7 @@ export default function AdminCatalogPage() {
 
       {activeSection === "segments" && (
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Segments (body / subcategory)</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Segmentet (karroceri / nënkategori)</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             <select
               value={segmentTypeId}
@@ -304,7 +305,7 @@ export default function AdminCatalogPage() {
             <input
               value={segmentName}
               onChange={(e) => setSegmentName(e.target.value)}
-              placeholder="Segment name (e.g. SUV)"
+              placeholder="Emri i segmentit (p.sh. SUV)"
               className="h-10 min-w-[160px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
             <select
@@ -322,7 +323,7 @@ export default function AdminCatalogPage() {
               value={segmentIconUrl}
               onChange={(e) => setSegmentIconUrl(e.target.value)}
               type="url"
-              placeholder="Custom icon image URL (optional)"
+              placeholder="URL e ikonës së personalizuar (opsionale)"
               className="h-10 min-w-[200px] flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
             <input
@@ -352,7 +353,7 @@ export default function AdminCatalogPage() {
               }}
               className="h-10 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white"
             >
-              Add segment
+              Shto segment
             </button>
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
@@ -382,7 +383,7 @@ export default function AdminCatalogPage() {
                     type="url"
                     defaultValue={s.iconUrl ?? ""}
                     id={`seg-iconUrl-${s.id}`}
-                    placeholder="Custom image URL"
+                    placeholder="URL e imazhit të personalizuar"
                     className="h-9 min-w-[160px] max-w-[220px] flex-1 rounded border border-slate-200 px-2 text-xs"
                   />
                   <input
@@ -427,14 +428,14 @@ export default function AdminCatalogPage() {
                       });
                     }}
                   >
-                    Save
+                    Ruaj
                   </button>
                   <button
                     type="button"
                     className="h-9 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-700"
                     onClick={() => deleteEntity("segment", s.id)}
                   >
-                    Delete
+                    Fshi
                   </button>
                 </li>
               );
@@ -445,7 +446,7 @@ export default function AdminCatalogPage() {
 
       {activeSection === "makes" && (
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Makes</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Markat</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
             <select
               value={makeTypeId}
@@ -466,7 +467,7 @@ export default function AdminCatalogPage() {
               onChange={(e) => setMakeSegmentId(e.target.value)}
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             >
-              <option value="">No segment</option>
+              <option value="">Pa segment</option>
               {segmentsForSelectedType.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -476,15 +477,25 @@ export default function AdminCatalogPage() {
             <input
               value={makeName}
               onChange={(e) => setMakeName(e.target.value)}
-              placeholder="Make name"
+              placeholder="Emri i markës"
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
-            <input
-              value={makeLogoUrl}
-              onChange={(e) => setMakeLogoUrl(e.target.value)}
-              placeholder="Logo URL (https://...)"
-              className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500 lg:col-span-2"
-            />
+            <div className="flex items-center gap-2 lg:col-span-2">
+              <input
+                value={makeLogoUrl}
+                onChange={(e) => setMakeLogoUrl(e.target.value)}
+                placeholder="URL e logos (https://...)"
+                className="h-10 flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
+              />
+              <MakeLogoUpload onUploaded={(url) => setMakeLogoUrl(url)} />
+              {makeLogoUrl && (
+                <img
+                  src={makeLogoUrl}
+                  alt="Pamja paraprake e logos"
+                  className="h-10 w-10 rounded border border-slate-200 object-contain bg-white p-1"
+                />
+              )}
+            </div>
             <button
               type="button"
               onClick={async () => {
@@ -503,7 +514,7 @@ export default function AdminCatalogPage() {
               }}
               className="h-10 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white"
             >
-              Add make
+              Shto markë
             </button>
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
@@ -528,8 +539,22 @@ export default function AdminCatalogPage() {
                 <input
                   defaultValue={m.logoUrl ?? ""}
                   id={`mk-logo-${m.id}`}
-                  placeholder="Logo URL"
+                  placeholder="URL e logos"
                   className="h-9 min-w-[220px] flex-1 rounded border border-slate-200 px-2"
+                />
+                <MakeLogoUpload
+                  onUploaded={async (url) => {
+                    const logoEl = document.getElementById(`mk-logo-${m.id}`) as HTMLInputElement | null;
+                    if (logoEl) logoEl.value = url;
+                    await patchJson({
+                      entity: "make",
+                      id: m.id,
+                      name: m.name,
+                      logoUrl: url,
+                      vehicleTypeId: m.vehicleTypeId,
+                      segmentId: m.segmentId,
+                    });
+                  }}
                 />
                 <select defaultValue={m.vehicleTypeId} id={`mk-type-${m.id}`} className="h-9 rounded border border-slate-200 px-2 text-xs">
                   {vehicleTypes.map((t) => (
@@ -539,7 +564,7 @@ export default function AdminCatalogPage() {
                   ))}
                 </select>
                 <select defaultValue={m.segmentId ?? ""} id={`mk-seg-${m.id}`} className="h-9 max-w-[140px] rounded border border-slate-200 px-2 text-xs">
-                  <option value="">No segment</option>
+                  <option value="">Pa segment</option>
                   {vehicleSegments
                     .filter((s) => s.vehicleTypeId === m.vehicleTypeId)
                     .map((s) => (
@@ -566,14 +591,14 @@ export default function AdminCatalogPage() {
                     });
                   }}
                 >
-                  Save
+                  Ruaj
                 </button>
                 <button
                   type="button"
                   className="h-9 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-700"
                   onClick={() => deleteEntity("make", m.id)}
                 >
-                  Delete
+                  Fshi
                 </button>
               </li>
             ))}
@@ -583,7 +608,7 @@ export default function AdminCatalogPage() {
 
       {activeSection === "models" && (
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Models</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Modelet</h2>
           <div className="mt-3 grid gap-2 sm:grid-cols-4">
             <select
               value={modelTypeId}
@@ -604,7 +629,7 @@ export default function AdminCatalogPage() {
               onChange={(e) => setModelMakeId(e.target.value)}
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             >
-              <option value="">Select make</option>
+              <option value="">Zgjidh markën</option>
               {makesForSelectedModelType.map((mk) => (
                 <option key={mk.id} value={mk.id}>
                   {mk.vehicleType?.name ? `${mk.vehicleType.name} · ` : ""}
@@ -615,7 +640,7 @@ export default function AdminCatalogPage() {
             <input
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
-              placeholder="Model name"
+              placeholder="Emri i modelit"
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
             <button
@@ -631,7 +656,7 @@ export default function AdminCatalogPage() {
               }}
               className="h-10 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white"
             >
-              Add model
+              Shto model
             </button>
           </div>
           <ul className="mt-4 divide-y divide-slate-100 text-sm">
@@ -663,14 +688,14 @@ export default function AdminCatalogPage() {
                     });
                   }}
                 >
-                  Save
+                  Ruaj
                 </button>
                 <button
                   type="button"
                   className="h-9 rounded-lg border border-red-200 px-3 text-xs font-semibold text-red-700"
                   onClick={() => deleteEntity("model", mod.id)}
                 >
-                  Delete
+                  Fshi
                 </button>
               </li>
             ))}
@@ -679,9 +704,9 @@ export default function AdminCatalogPage() {
       )}
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Summary</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Përmbledhje</h2>
           <p className="mt-2 text-sm text-slate-700">
-            Types: {vehicleTypes.length} · Segments: {vehicleSegments.length} · Makes: {makes.length} · Models:{" "}
+            Lloje: {vehicleTypes.length} · Segmente: {vehicleSegments.length} · Marka: {makes.length} · Modele:{" "}
             {models.length}
           </p>
       </section>

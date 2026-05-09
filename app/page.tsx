@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import PopularMakes from "./components/popular-makes";
 import {
   getCatalogData,
@@ -12,6 +13,35 @@ import { VehicleSegmentIcon } from "./components/vehicle-segment-icon";
 import HomeSearchForm from "./components/home-search-form";
 import TopRatedSellers from "./components/top-rated-sellers";
 
+const SITE_URL = "https://motivo.autos";
+
+export const metadata: Metadata = {
+  title: "Makina, motoçikleta, furgona, varka & kamionë në shitje në Shqipëri",
+  description:
+    "Shfleto dhe liston mjete në shitje në Shqipëri në Motivo. Gjej makina, motoçikleta, furgona, varka dhe kamionë nga koncesionarë të besueshëm dhe shitës privatë.",
+  alternates: { canonical: "/" },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Motivo",
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon.svg`,
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Motivo",
+  url: SITE_URL,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/makina?make={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
 type HomePageProps = {
   searchParams: Promise<{
     vehicleType?: string;
@@ -22,11 +52,11 @@ type HomePageProps = {
 export default async function Home({ searchParams }: HomePageProps) {
   const params = await searchParams;
   const vehicleTypes = await getVehicleTypes();
-  const defaultSlug = vehicleTypes[0]?.slug ?? "cars";
+  const defaultSlug = vehicleTypes[0]?.slug ?? "makina";
   const selectedVehicleType = params.vehicleType ?? defaultSlug;
   const segments = await getVehicleSegmentsForTypeSlug(selectedVehicleType);
   const visibleSegments =
-    selectedVehicleType === "cars"
+    selectedVehicleType === "makina"
       ? segments.filter((segment) => segment.slug !== "van")
       : segments;
   const { makes: makesForTab, models: modelsForTab } = await getCatalogData({
@@ -37,7 +67,15 @@ export default async function Home({ searchParams }: HomePageProps) {
   const homeStats = await getHomeStats();
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       <header
         className="relative bg-cover bg-center"
         style={{
@@ -53,7 +91,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               Sell Faster. Buy Smarter.
             </h1>
             <h2 className="mt-4 mb-8 text-base font-semibold text-slate-200 sm:text-lg">
-              Search to buy, list to sell across Albania — make, model, registration, mileage, and price.
+              Platformë moderne për blerje dhe shitje automjetesh në Shqipëri.
             </h2>
           </div>
 
@@ -75,7 +113,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               })}
             {vehicleTypes.length === 0 ? (
               <span className="rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700">
-                No vehicle types configured yet
+                Nuk ka ende lloje mjetesh të konfiguruara
               </span>
             ) : null}
           </div>
@@ -86,27 +124,26 @@ export default async function Home({ searchParams }: HomePageProps) {
             initialMake={params.make}
           />
           <h3 className="mt-5 text-center text-xl font-semibold tracking-tight text-white sm:text-2xl">
-            Browse {homeStats.listings.toLocaleString()} vehicles from {homeStats.sellers.toLocaleString()} sellers and{" "}
-            {homeStats.dealers.toLocaleString()} dealers
+            Shfleto {homeStats.listings.toLocaleString()} mjete nga {homeStats.sellers.toLocaleString()} shitës dhe{" "}
+            {homeStats.dealers.toLocaleString()} koncesionarë
           </h3>
         </div>
       </header>
       <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h3 className="text-lg font-semibold text-slate-900">
-            Browse by Category
+            Shfleto sipas kategorisë
           </h3>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {visibleSegments.length === 0 ? (
               <p className="col-span-full text-sm text-slate-600">
-                No segments yet for this vehicle type. Add them in Admin → Catalog Manager (segments under this
-                type).
+                Ende nuk ka segmente për këtë lloj mjeti. Shtoji në Admin → Menaxhuesi i katalogut (segmentet nën këtë lloj).
               </p>
             ) : (
               visibleSegments.map((segment) => (
                 <a
                   key={segment.id}
-                  href={`/cars?vehicleType=${encodeURIComponent(selectedVehicleType)}&segment=${encodeURIComponent(segment.slug)}`}
+                  href={`/${encodeURIComponent(selectedVehicleType)}?segment=${encodeURIComponent(segment.slug)}`}
                   className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                 >
                   <span className="text-slate-700" aria-hidden="true">
@@ -127,6 +164,6 @@ export default async function Home({ searchParams }: HomePageProps) {
       </section>
       <PopularMakes makes={popularMakes} />
       <TopRatedSellers sellers={topRatedSellers} />
-    </div>
+    </main>
   );
 }

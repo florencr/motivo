@@ -82,6 +82,10 @@ export async function POST(req: Request) {
     const autoPublish = body?.autoPublish !== false;
     const requestDelayMs = Number(body?.requestDelayMs ?? 1500) || 1500;
     const maxPerRun = Number(body?.maxPerRun ?? 100) || 100;
+    const cronIntervalHours = Math.max(
+      1,
+      Math.min(Number(body?.cronIntervalHours ?? 6) || 6, 168),
+    );
     const isActive = body?.isActive !== false;
 
     if (!name) {
@@ -129,6 +133,7 @@ export async function POST(req: Request) {
         autoPublish,
         requestDelayMs,
         maxPerRun,
+        cronIntervalHours,
         isActive,
       },
     });
@@ -205,6 +210,12 @@ export async function PATCH(req: Request) {
     }
     if (body?.maxPerRun !== undefined) {
       data.maxPerRun = Number(body.maxPerRun) || 100;
+    }
+    if (body?.cronIntervalHours !== undefined) {
+      data.cronIntervalHours = Math.max(
+        1,
+        Math.min(Number(body.cronIntervalHours) || 6, 168),
+      );
     }
     if (body?.isActive !== undefined) data.isActive = !!body.isActive;
 

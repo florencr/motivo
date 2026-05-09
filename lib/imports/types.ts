@@ -25,6 +25,8 @@ export type NormalizedListing = {
   mileageKm: number;
   fuelType: FuelType;
   transmission: Transmission;
+  engineCapacity?: number;
+  powerHp?: number;
   description: string;
   sellerType?: SellerType;
   imageUrls?: string[];

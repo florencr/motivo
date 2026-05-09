@@ -2,11 +2,13 @@ import type { Connector } from "@/lib/imports/types";
 import { genericConnector } from "@/lib/imports/connectors/generic";
 import { manualConnector } from "@/lib/imports/connectors/manual";
 import { merrjepConnector } from "@/lib/imports/connectors/merrjep";
+import { njoftimeConnector } from "@/lib/imports/connectors/njoftime";
 
 const REGISTRY: Record<string, Connector> = {
   [genericConnector.key]: genericConnector,
   [manualConnector.key]: manualConnector,
   [merrjepConnector.key]: merrjepConnector,
+  [njoftimeConnector.key]: njoftimeConnector,
 };
 
 export function getConnector(key: string): Connector | null {

@@ -14,9 +14,38 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://motivo.autos";
+
 export const metadata: Metadata = {
-  title: "Motivo",
-  description: "Find, compare, and list cars",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Motivo — Makina, motoçikleta, furgona, varka dhe kamionë në shitje në Shqipëri",
+    template: "%s | Motivo",
+  },
+  description:
+    "Shfleto dhe liston makina, motoçikleta, furgona, varka dhe kamionë në shitje në Shqipëri. Filtrim sipas markës, modelit, çmimit, kilometrazhit dhe më shumë në Motivo.",
+  applicationName: "Motivo",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Motivo",
+    url: "/",
+    title: "Motivo — Mjete në shitje në Shqipëri",
+    description:
+      "Shfleto dhe liston makina, motoçikleta, furgona, varka dhe kamionë në shitje në Shqipëri.",
+    locale: "sq_AL",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Motivo — Mjete në shitje në Shqipëri",
+    description:
+      "Shfleto dhe liston makina, motoçikleta, furgona, varka dhe kamionë në shitje në Shqipëri.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
 };
 
 export default async function RootLayout({
@@ -26,7 +55,7 @@ export default async function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="sq"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

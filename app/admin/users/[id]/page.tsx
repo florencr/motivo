@@ -45,9 +45,9 @@ export default async function AdminUserProfilePage({ params }: UserProfilePagePr
     return (
       <main className="space-y-6">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">User not found</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Përdoruesi nuk u gjet</h1>
           <a href="/admin/users" className="mt-3 inline-block text-sm text-slate-700 underline">
-            Back to users
+            Kthehu te përdoruesit
           </a>
         </div>
       </main>
@@ -60,24 +60,24 @@ export default async function AdminUserProfilePage({ params }: UserProfilePagePr
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">{user.name}</h1>
-            <p className="mt-1 text-sm text-slate-600">Role: {user.role}</p>
+            <p className="mt-1 text-sm text-slate-600">Roli: {user.role}</p>
             <p className="mt-1 text-sm text-slate-600">
-              Rating: {user.dealerRating != null ? Number(user.dealerRating).toFixed(1) : "0.0"} / 5 (
-              {user.dealerReviewCount} reviews)
+              Vlerësimi: {user.dealerRating != null ? Number(user.dealerRating).toFixed(1) : "0.0"} / 5 (
+              {user.dealerReviewCount} vlerësime)
             </p>
           </div>
           <a href="/admin/users" className="text-sm text-slate-700 underline">
-            Back to users
+            Kthehu te përdoruesit
           </a>
         </div>
 
         <div className="mt-5 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm sm:grid-cols-2">
           <p>
-            <span className="font-semibold text-slate-800">Profile type:</span>{" "}
+            <span className="font-semibold text-slate-800">Lloji i profilit:</span>{" "}
             <span className="text-slate-700">{user.sellerType ?? "-"}</span>
           </p>
           <p>
-            <span className="font-semibold text-slate-800">Full name:</span>{" "}
+            <span className="font-semibold text-slate-800">Emri i plotë:</span>{" "}
             <span className="text-slate-700">{user.name}</span>
           </p>
           <p>
@@ -85,35 +85,35 @@ export default async function AdminUserProfilePage({ params }: UserProfilePagePr
             <span className="text-slate-700">{user.email}</span>
           </p>
           <p>
-            <span className="font-semibold text-slate-800">Phone:</span>{" "}
+            <span className="font-semibold text-slate-800">Telefoni:</span>{" "}
             <span className="text-slate-700">{user.phone ?? "-"}</span>
           </p>
           <p>
-            <span className="font-semibold text-slate-800">Address:</span>{" "}
+            <span className="font-semibold text-slate-800">Adresa:</span>{" "}
             <span className="text-slate-700">{user.address ?? "-"}</span>
           </p>
           <p>
-            <span className="font-semibold text-slate-800">Company:</span>{" "}
+            <span className="font-semibold text-slate-800">Kompania:</span>{" "}
             <span className="text-slate-700">{user.companyName ?? "-"}</span>
           </p>
         </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Listings</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Listimet</h2>
         {user.listings.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-600">No listings for this user.</p>
+          <p className="mt-3 text-sm text-slate-600">Asnjë listim për këtë përdorues.</p>
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="border-b border-slate-200 text-slate-600">
                 <tr>
-                  <th className="py-2">Type</th>
-                  <th className="py-2">Name</th>
-                  <th className="py-2">Category</th>
-                  <th className="py-2">#No</th>
-                  <th className="py-2">Date Added</th>
-                  <th className="py-2">Expiration</th>
+                  <th className="py-2">Lloji</th>
+                  <th className="py-2">Emri</th>
+                  <th className="py-2">Kategoria</th>
+                  <th className="py-2">#Nr</th>
+                  <th className="py-2">Data e shtimit</th>
+                  <th className="py-2">Skadimi</th>
                 </tr>
               </thead>
               <tbody>

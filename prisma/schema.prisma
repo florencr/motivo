@@ -87,6 +87,10 @@ model User {
   role            UserRole   @default(BUYER)
   sellerType      SellerType?
   companyName     String?
+  /** Public mini-site path segment: motivo.autos/{companySlug} (dealers only). */
+  companySlug     String?    @unique
+  /** Short tagline on the dealer landing banner. */
+  companySlogan   String?
   companyLogoUrl  String?
   profileDescription String?
   taxId           String?
@@ -257,8 +261,8 @@ model Listing {
   year         Int
   mileageKm    Int
   sellerType   SellerType
-  hasAlbanianPlates Boolean @default(false)
-  isCustomsPaid Boolean @default(false)
+  hasAlbanianPlates Boolean?
+  isCustomsPaid Boolean?
   isTaxRefundable Boolean @default(false)
   fuelType     FuelType
   transmission Transmission
@@ -328,6 +332,8 @@ model ImportSource {
   autoPublish     Boolean          @default(true)
   requestDelayMs  Int              @default(1500)
   maxPerRun       Int              @default(100)
+  /** How many hours between automatic runs (used by /api/cron/imports). */
+  cronIntervalHours Int            @default(6)
   isActive        Boolean          @default(true)
   lastRunAt       DateTime?
   createdAt       DateTime         @default(now())

@@ -15,22 +15,22 @@ export type FooterLinks = {
 export async function getFooterLinks(): Promise<FooterLinks> {
   const defaults: FooterLinks = {
     getStarted: [
-      { title: "Register as Buyer", href: "/register" },
-      { title: "Register as Seller", href: "/register" },
-      { title: "Register Company", href: "/register" },
-      { title: "Post a Listing", href: "/cars" },
+      { title: "Regjistrohu si blerës", href: "/register" },
+      { title: "Regjistrohu si shitës", href: "/register" },
+      { title: "Regjistro kompani", href: "/register" },
+      { title: "Publiko një listim", href: "/dashboard/sell" },
     ],
     userLinks: [
-      { title: "My Profile", href: "#" },
-      { title: "Saved Cars", href: "#" },
-      { title: "Comparison", href: "#" },
-      { title: "Messages", href: "#" },
+      { title: "Profili im", href: "#" },
+      { title: "Të preferuarat", href: "#" },
+      { title: "Krahasimi", href: "#" },
+      { title: "Mesazhet", href: "#" },
     ],
     company: [
-      { title: "About Us", href: "#" },
-      { title: "Contact", href: "#" },
-      { title: "Privacy Policy", href: "#" },
-      { title: "Terms of Use", href: "#" },
+      { title: "Rreth nesh", href: "#" },
+      { title: "Kontakti", href: "#" },
+      { title: "Politika e privatësisë", href: "#" },
+      { title: "Kushtet e përdorimit", href: "#" },
     ],
     app: [
       { title: "iOS App Store", href: "#" },

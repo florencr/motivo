@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function safeNext(value: string | null): string {
+  if (!value) return "/";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  return value;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = safeNext(searchParams.get("next"));
+  const registerHref = `/register?next=${encodeURIComponent(nextUrl)}`;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,13 +32,13 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "Login failed");
+        setError(data?.error ?? "Identifikimi dështoi");
         return;
       }
-      router.push("/");
+      router.push(nextUrl);
       router.refresh();
     } catch {
-      setError("Login failed");
+      setError("Identifikimi dështoi");
     } finally {
       setLoading(false);
     }
@@ -38,8 +47,8 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Login</h1>
-        <p className="mt-1 text-sm text-slate-600">Access your Motivo account</p>
+        <h1 className="text-2xl font-bold text-slate-900">Identifikohu</h1>
+        <p className="mt-1 text-sm text-slate-600">Hyr në llogarinë tënde Motivo</p>
 
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
           <input
@@ -54,7 +63,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder="Fjalëkalimi"
             required
             className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
           />
@@ -64,17 +73,25 @@ export default function LoginPage() {
             disabled={loading}
             className="h-11 w-full rounded-lg bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? "Po identifikohet..." : "Identifikohu"}
           </button>
         </form>
 
         <p className="mt-4 text-sm text-slate-600">
-          No account?{" "}
-          <a href="/register" className="font-medium text-slate-900 underline">
-            Create account
+          Nuk ke llogari?{" "}
+          <a href={registerHref} className="font-medium text-slate-900 underline">
+            Krijo llogari
           </a>
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

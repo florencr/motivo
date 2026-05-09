@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import SearchableSelect from "./searchable-select";
+import SearchableMultiSelect from "./searchable-multi-select";
 
 type MakeOption = { id: string; name: string };
 type ModelOption = { id: string; name: string; make: { name: string } };
@@ -13,79 +13,88 @@ type HomeSearchFormProps = {
   initialMake?: string;
 };
 
+function splitSelectedValues(value?: string) {
+  return String(value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export default function HomeSearchForm({
   selectedVehicleType,
   makes,
   models,
   initialMake = "",
 }: HomeSearchFormProps) {
-  const [make, setMake] = useState(initialMake);
-  const [model, setModel] = useState("");
+  const [make, setMake] = useState<string[]>(splitSelectedValues(initialMake));
+  const [model, setModel] = useState<string[]>([]);
 
   const filteredModels = useMemo(() => {
-    if (!make) return [];
-    return models.filter((item) => item.make.name.toLowerCase() === make.toLowerCase());
+    if (make.length === 0) return [];
+    const selectedMakes = new Set(make.map((item) => item.toLowerCase()));
+    return models.filter((item) =>
+      selectedMakes.has(item.make.name.toLowerCase()),
+    );
   }, [make, models]);
 
   return (
     <form
-      action="/cars"
+      action={`/${selectedVehicleType}`}
       method="GET"
       className="mt-8 w-full rounded-2xl bg-white/95 p-4 shadow-2xl backdrop-blur sm:p-6"
     >
-      <input type="hidden" name="vehicleType" value={selectedVehicleType} />
       <div className="grid gap-3 md:grid-cols-6">
-        <SearchableSelect
+        <SearchableMultiSelect
           name="make"
-          value={make}
+          values={make}
           onChange={(next) => {
             setMake(next);
-            setModel("");
+            setModel([]);
           }}
           options={makes.map((item) => ({ value: item.name, label: item.name }))}
-          placeholder="Make"
-          searchPlaceholder="Search make..."
-          emptyText="No makes found"
+          placeholder="Marka"
+          searchPlaceholder="Kërko markë..."
+          emptyText="Nuk u gjet asnjë markë"
         />
-        <SearchableSelect
+        <SearchableMultiSelect
           name="model"
-          value={model}
+          values={model}
           onChange={(next) => setModel(next)}
-          options={filteredModels.map((model) => ({
-            value: model.name,
-            label: `${model.make.name} - ${model.name}`,
+          options={filteredModels.map((item) => ({
+            value: item.name,
+            label: `${item.make.name} - ${item.name}`,
           }))}
-          placeholder={!make ? "Select make first" : "Model"}
-          searchPlaceholder="Search model..."
-          emptyText="No models for selected make"
-          disabled={!make}
+          placeholder={make.length === 0 ? "Zgjidh markën më parë" : "Modeli"}
+          searchPlaceholder="Kërko model..."
+          emptyText="Nuk ka modele për markën e zgjedhur"
+          disabled={make.length === 0}
         />
         <input
           name="registrationFrom"
           type="number"
           min="1900"
-          placeholder="Registration From"
+          placeholder="Regjistrimi nga"
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
         />
         <input
           name="mileageTo"
           type="number"
           min="0"
-          placeholder="Mileage Up To (km)"
+          placeholder="Kilometrazhi deri (km)"
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
         />
         <input
           name="priceTo"
           type="number"
           min="0"
-          placeholder="Max Price"
+          placeholder="Çmimi maksimal"
           className="h-11 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
         />
         <button
           type="submit"
           className="h-11 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700"
         >
-          Search Cars
+          Kërko
         </button>
       </div>
     </form>

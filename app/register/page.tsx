@@ -1,12 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Role = "BUYER" | "PRIVATE_SELLER" | "DEALER";
 
-export default function RegisterPage() {
+function safeNext(value: string | null): string {
+  if (!value) return "/";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  return value;
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = safeNext(searchParams.get("next"));
+  const loginHref = `/login?next=${encodeURIComponent(nextUrl)}`;
   const [role, setRole] = useState<Role>("BUYER");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -21,9 +30,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   const roleTitle = useMemo(() => {
-    if (role === "DEALER") return "Dealer account";
-    if (role === "PRIVATE_SELLER") return "Private seller account";
-    return "Buyer account";
+    if (role === "DEALER") return "Llogari koncesionari";
+    if (role === "PRIVATE_SELLER") return "Llogari shitësi privat";
+    return "Llogari blerësi";
   }, [role]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -50,13 +59,13 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "Registration failed");
+        setError(data?.error ?? "Regjistrimi dështoi");
         return;
       }
-      router.push("/");
+      router.push(nextUrl);
       router.refresh();
     } catch {
-      setError("Registration failed");
+      setError("Regjistrimi dështoi");
     } finally {
       setLoading(false);
     }
@@ -65,7 +74,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-10">
       <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">Create Account</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Krijo llogari</h1>
         <p className="mt-1 text-sm text-slate-600">{roleTitle}</p>
 
         <div className="mt-4 flex flex-wrap gap-2">
@@ -81,10 +90,10 @@ export default function RegisterPage() {
               }`}
             >
               {item === "BUYER"
-                ? "Buyer"
+                ? "Blerës"
                 : item === "PRIVATE_SELLER"
-                  ? "Private Seller"
-                  : "Dealer"}
+                  ? "Shitës privat"
+                  : "Koncesionar"}
             </button>
           ))}
         </div>
@@ -94,14 +103,14 @@ export default function RegisterPage() {
             <input
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="First name"
+              placeholder="Emri"
               required
               className="h-11 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
             <input
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder="Last name"
+              placeholder="Mbiemri"
               required
               className="h-11 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
@@ -120,7 +129,7 @@ export default function RegisterPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password (min 8 characters)"
+            placeholder="Fjalëkalimi (min 8 karaktere)"
             required
             className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
           />
@@ -129,7 +138,7 @@ export default function RegisterPage() {
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone"
+              placeholder="Telefoni"
               required={role === "PRIVATE_SELLER"}
               className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
@@ -139,7 +148,7 @@ export default function RegisterPage() {
             <input
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="Avatar URL (optional)"
+              placeholder="URL e fotos së profilit (opsionale)"
               className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             />
           )}
@@ -149,21 +158,21 @@ export default function RegisterPage() {
               <input
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Company name"
+                placeholder="Emri i kompanisë"
                 required
                 className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
               />
               <input
                 value={taxId}
                 onChange={(e) => setTaxId(e.target.value)}
-                placeholder="Tax ID"
+                placeholder="NIPT / Numri i tatimit"
                 required
                 className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
               />
               <input
                 value={companyLogoUrl}
                 onChange={(e) => setCompanyLogoUrl(e.target.value)}
-                placeholder="Company logo URL (optional)"
+                placeholder="URL e logos së kompanisë (opsionale)"
                 className="h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
               />
             </>
@@ -176,17 +185,25 @@ export default function RegisterPage() {
             disabled={loading}
             className="h-11 w-full rounded-lg bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
           >
-            {loading ? "Creating..." : "Create account"}
+            {loading ? "Po krijohet..." : "Krijo llogari"}
           </button>
         </form>
 
         <p className="mt-4 text-sm text-slate-600">
-          Already have account?{" "}
-          <a href="/login" className="font-medium text-slate-900 underline">
-            Login
+          Ke tashmë llogari?{" "}
+          <a href={loginHref} className="font-medium text-slate-900 underline">
+            Identifikohu
           </a>
         </p>
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

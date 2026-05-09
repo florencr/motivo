@@ -30,12 +30,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     select: { companyName: true, name: true },
   });
   if (!dealer) {
-    return { title: "Dealer | Motivo" };
+    return { title: "Koncesionari | Motivo" };
   }
   const label = (dealer.companyName?.trim() || dealer.name).trim();
   return {
-    title: `${label} — Cars for sale | Motivo`,
-    description: `Browse vehicles listed by ${label} on Motivo.`,
+    title: `${label} — Mjete në shitje | Motivo`,
+    description: `Shfleto mjetet e listuara nga ${label} në Motivo.`,
   };
 }
 
@@ -69,14 +69,14 @@ export default async function DealerInventoryPage({ params }: PageProps) {
   });
 
   const fuelMap: Record<string, string> = {
-    PETROL: "Petrol",
-    DIESEL: "Diesel",
-    ELECTRIC: "Electric",
-    HYBRID: "Hybrid",
+    PETROL: "Benzinë",
+    DIESEL: "Naftë",
+    ELECTRIC: "Elektrik",
+    HYBRID: "Hibrid",
   };
   const transmissionMap: Record<string, string> = {
     MANUAL: "Manual",
-    AUTOMATIC: "Automatic",
+    AUTOMATIC: "Automatik",
   };
 
   return (
@@ -87,7 +87,7 @@ export default async function DealerInventoryPage({ params }: PageProps) {
             href="/dealers"
             className="text-sm font-medium text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline"
           >
-            ← All dealers
+            ← Të gjithë koncesionarët
           </Link>
         </div>
 
@@ -111,25 +111,25 @@ export default async function DealerInventoryPage({ params }: PageProps) {
                   </span>
                   <span className="text-sm text-slate-600">
                     ({dealer.dealerReviewCount}{" "}
-                    {dealer.dealerReviewCount === 1 ? "review" : "reviews"})
+                    {dealer.dealerReviewCount === 1 ? "vlerësim" : "vlerësime"})
                   </span>
                 </>
               ) : (
-                <span className="text-sm text-slate-500">No rating yet</span>
+                <span className="text-sm text-slate-500">Ende pa vlerësim</span>
               )}
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-800">
                 {listings.length}{" "}
-                {listings.length === 1 ? "car listed" : "cars listed"}
+                {listings.length === 1 ? "mjet i listuar" : "mjete të listuara"}
               </span>
             </div>
           </div>
         </header>
 
         <section>
-          <h2 className="sr-only">Cars from this dealer</h2>
+          <h2 className="sr-only">Makinat nga ky koncesionar</h2>
           {listings.length === 0 ? (
             <div className="rounded-xl border border-slate-200 bg-white px-5 py-10 text-center text-slate-600">
-              This dealer has no published listings yet.
+              Ky koncesionar ende nuk ka listime të publikuara.
             </div>
           ) : (
             <div className="grid gap-4">
@@ -161,7 +161,7 @@ export default async function DealerInventoryPage({ params }: PageProps) {
                     <div className="flex flex-1 flex-col p-5">
                       <h3 className="text-xl font-semibold text-slate-900">
                         <Link
-                          href={`/cars/${item.id}`}
+                          href={`/makina/${item.slug || item.id}`}
                           className="transition hover:text-slate-700 hover:underline"
                         >
                           {item.title}
@@ -181,16 +181,16 @@ export default async function DealerInventoryPage({ params }: PageProps) {
                         </p>
                         {item.isTaxRefundable ? (
                           <span className="text-xs font-medium text-slate-600">
-                            (tax refundable)
+                            (tatim i rimbursueshëm)
                           </span>
                         ) : null}
                       </div>
                       <div className="mt-4">
                         <Link
-                          href={`/cars/${item.id}`}
+                          href={`/makina/${item.slug || item.id}`}
                           className="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
                         >
-                          View car
+                          Shiko mjetin
                         </Link>
                       </div>
                     </div>

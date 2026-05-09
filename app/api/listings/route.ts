@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { toSlug } from "@/lib/slug";
 import { NextResponse } from "next/server";
 
+function parseNullableBoolean(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  return Boolean(value);
+}
+
 export async function POST(req: Request) {
   try {
     const user = await getSessionUserFromRequest(req);
@@ -41,6 +46,17 @@ export async function POST(req: Request) {
     const imageUrls = Array.isArray(body?.imageUrls)
       ? body.imageUrls.filter((value: unknown): value is string => typeof value === "string")
       : [];
+    const hasAlbanianPlates = parseNullableBoolean(body?.hasAlbanianPlates);
+    const isCustomsPaid = parseNullableBoolean(body?.isCustomsPaid);
+    const isTaxRefundable = Boolean(body?.isTaxRefundable);
+    const engineCapacityRaw = Number(body?.engineCapacity ?? 0);
+    const engineCapacity =
+      Number.isFinite(engineCapacityRaw) && engineCapacityRaw > 0
+        ? Math.round(engineCapacityRaw)
+        : null;
+    const powerHpRaw = Number(body?.powerHp ?? 0);
+    const powerHp =
+      Number.isFinite(powerHpRaw) && powerHpRaw > 0 ? Math.round(powerHpRaw) : null;
 
     if (!title || !makeId || !modelId || !year || !mileageKm || !price || !description) {
       return NextResponse.json(
@@ -87,6 +103,11 @@ export async function POST(req: Request) {
         damageSeverity,
         hasServiceHistory,
         sellerType,
+        hasAlbanianPlates,
+        isCustomsPaid,
+        isTaxRefundable,
+        engineCapacity,
+        powerHp,
         isPublished: true,
         features: {
           selectedFeatures,

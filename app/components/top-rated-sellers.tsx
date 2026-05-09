@@ -15,10 +15,10 @@ export default function TopRatedSellers({ sellers }: { sellers: TopRatedSeller[]
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h3 className="text-xl font-semibold text-slate-900">Top Rated Dealers/Sellers</h3>
-        <p className="mt-1 text-sm text-slate-600">Highest rated profiles based on buyer reviews.</p>
+        <h3 className="text-xl font-semibold text-slate-900">Koncesionarët/Shitësit më të vlerësuar</h3>
+        <p className="mt-1 text-sm text-slate-600">Profilet më të vlerësuara, bazuar në vlerësimet e blerësve.</p>
         {sellers.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-600">No ratings yet.</p>
+          <p className="mt-4 text-sm text-slate-600">Ende nuk ka vlerësime.</p>
         ) : (
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {sellers.map((seller) => {
@@ -38,7 +38,7 @@ export default function TopRatedSellers({ sellers }: { sellers: TopRatedSeller[]
                   ) : (
                     <p className="truncate text-sm font-semibold text-slate-900">{label}</p>
                   )}
-                  <p className="mt-0.5 text-xs text-slate-600">{seller.role === "DEALER" ? "Dealer" : "Private seller"}</p>
+                  <p className="mt-0.5 text-xs text-slate-600">{seller.role === "DEALER" ? "Koncesionar" : "Shitës privat"}</p>
                   <div className="mt-2">
                     <StarsRow rating={seller.dealerRating} />
                   </div>

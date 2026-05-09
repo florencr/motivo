@@ -29,6 +29,15 @@ export function parsePriceMajor(raw: unknown): number {
     } else {
       normalized = normalized.replace(/,/g, "");
     }
+  } else if (/\./.test(normalized)) {
+    const parts = normalized.split(".");
+    if (parts.length > 2) {
+      // Multiple dots = thousand separators (e.g. "1.234.567").
+      normalized = parts.join("");
+    } else if (parts.length === 2 && parts[1].length === 3) {
+      // "3.500" — European thousand separator (no decimals for car prices).
+      normalized = parts.join("");
+    }
   }
 
   const n = Number.parseFloat(normalized);

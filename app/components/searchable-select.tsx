@@ -25,8 +25,8 @@ export default function SearchableSelect({
   onChange,
   options,
   placeholder,
-  searchPlaceholder = "Type to filter...",
-  emptyText = "No results",
+  searchPlaceholder = "Shkruaj për të filtruar...",
+  emptyText = "Asnjë rezultat",
   disabled = false,
   className = "",
 }: SearchableSelectProps) {

@@ -1,0 +1,1 @@
+ALTER TABLE "ImportSource" ADD COLUMN "cronIntervalHours" INTEGER NOT NULL DEFAULT 6;
