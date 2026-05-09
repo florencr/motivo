@@ -74,7 +74,7 @@ type SourceEditState = {
 
 const SOURCE_TYPES = [
   { value: "WEBSITE", label: "Website" },
-  { value: "FACEBOOK_MARKETPLACE", label: "Facebook Marketplace (manual)" },
+  { value: "FACEBOOK_MARKETPLACE", label: "Facebook Marketplace" },
   { value: "FACEBOOK_POST", label: "Facebook Post (manual)" },
   { value: "INSTAGRAM_POST", label: "Instagram Post (manual)" },
   { value: "MANUAL", label: "Manual" },
@@ -336,6 +336,11 @@ export default function AdminImportsPage() {
     return map;
   }, [sources]);
 
+  const listUrlsPlaceholderNew =
+    type === "FACEBOOK_MARKETPLACE"
+      ? "https://www.facebook.com/marketplace/item/1234567890/\nhttps://www.facebook.com/marketplace/item/9876543210/\n(vetëm linke të tilla — jo URL kërkimi / kategori)"
+      : "https://example.com/cars?page=1\nhttps://example.com/cars?page=2";
+
   return (
     <main className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -371,7 +376,11 @@ export default function AdminImportsPage() {
             <span className="font-medium text-slate-700">Lloji i burimit</span>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setType(v);
+                if (v === "FACEBOOK_MARKETPLACE") setConnectorKey("facebook_marketplace");
+              }}
               className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
             >
               {SOURCE_TYPES.map((t) => (
@@ -394,6 +403,13 @@ export default function AdminImportsPage() {
                 </option>
               ))}
             </select>
+            {type === "FACEBOOK_MARKETPLACE" && connectorKey !== "facebook_marketplace" && (
+              <span className="text-[11px] text-amber-700">
+                Për Marketplace zgjidhni konektorin{" "}
+                <strong className="font-semibold">facebook_marketplace</strong> — &quot;generic&quot;
+                nuk nxjerr linke nga Facebook.
+              </span>
+            )}
           </label>
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-slate-700">URL bazë (origjina)</span>
@@ -410,7 +426,7 @@ export default function AdminImportsPage() {
               value={listUrlsText}
               onChange={(e) => setListUrlsText(e.target.value)}
               rows={3}
-              placeholder={"https://example.com/cars?page=1\nhttps://example.com/cars?page=2"}
+              placeholder={listUrlsPlaceholderNew}
               className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
             />
           </label>
@@ -574,7 +590,16 @@ export default function AdminImportsPage() {
                         <span className="font-medium text-slate-700">Lloji i burimit</span>
                         <select
                           value={editSource.type}
-                          onChange={(e) => setEditSource({ ...editSource, type: e.target.value })}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setEditSource({
+                              ...editSource,
+                              type: v,
+                              ...(v === "FACEBOOK_MARKETPLACE"
+                                ? { connectorKey: "facebook_marketplace" }
+                                : {}),
+                            });
+                          }}
                           className="h-10 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-slate-500"
                         >
                           {SOURCE_TYPES.map((t) => (
@@ -597,6 +622,13 @@ export default function AdminImportsPage() {
                             </option>
                           ))}
                         </select>
+                        {editSource.type === "FACEBOOK_MARKETPLACE" &&
+                          editSource.connectorKey !== "facebook_marketplace" && (
+                            <span className="text-[11px] text-amber-700">
+                              Zgjidhni <strong className="font-semibold">facebook_marketplace</strong> ose ruani:
+                              serveri e kalon automatikisht nga generic nëse tipi është Facebook Marketplace.
+                            </span>
+                          )}
                       </label>
                       <label className="flex flex-col gap-1 text-sm">
                         <span className="font-medium text-slate-700">URL bazë (origjina)</span>
@@ -612,6 +644,11 @@ export default function AdminImportsPage() {
                           value={editSource.listUrlsText}
                           onChange={(e) => setEditSource({ ...editSource, listUrlsText: e.target.value })}
                           rows={3}
+                          placeholder={
+                            editSource.type === "FACEBOOK_MARKETPLACE"
+                              ? "https://www.facebook.com/marketplace/item/1234567890/\n(vetëm artikuj — jo faqe kërkimi)"
+                              : undefined
+                          }
                           className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500"
                         />
                       </label>

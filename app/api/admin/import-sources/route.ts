@@ -72,7 +72,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const name = String(body?.name ?? "").trim();
     const type = String(body?.type ?? "WEBSITE");
-    const connectorKey = String(body?.connectorKey ?? "generic").trim() || "generic";
+    let connectorKey = String(body?.connectorKey ?? "generic").trim() || "generic";
+    if (type === "FACEBOOK_MARKETPLACE" && connectorKey === "generic") {
+      connectorKey = "facebook_marketplace";
+    }
     const baseUrl = body?.baseUrl ? String(body.baseUrl).trim() : null;
     const listUrls = normalizeListUrls(body?.listUrls);
     const config = normalizeConfig(body?.config);
@@ -221,6 +224,21 @@ export async function PATCH(req: Request) {
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "nothing to update" }, { status: 400 });
+    }
+
+    const existing = await prisma.importSource.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+
+    const mergedType =
+      data.type !== undefined ? String(data.type) : existing.type;
+    const mergedConnector =
+      data.connectorKey !== undefined
+        ? String(data.connectorKey)
+        : existing.connectorKey;
+    if (mergedType === "FACEBOOK_MARKETPLACE" && mergedConnector === "generic") {
+      data.connectorKey = "facebook_marketplace";
     }
 
     const updated = await prisma.importSource.update({
